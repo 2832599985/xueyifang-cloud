@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中；阶段 3 基础设施已完成，阶段 4 已新增 JWT 公共能力、Gateway Bearer Token 校验和 Auth Token 刷新接口。
+- 当前状态：阶段 4 认证与用户迁移进行中；阶段 3 基础设施已完成，阶段 4 已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析和 Auth Token 刷新接口。
 
 ## 根目录索引
 
@@ -47,7 +47,7 @@
 | 模块 | 状态 | 功能短评 |
 | --- | --- | --- |
 | `xueyifang-common-core` | 已创建 | 通用响应、错误码、业务异常、用户上下文和链路常量，避免绑定 Web 技术栈。 |
-| `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；自动装配统一异常处理和 requestId 过滤器。 |
+| `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；自动装配统一异常处理、requestId 过滤器和用户上下文过滤器。 |
 | `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前使用 Nacos 服务发现和 `lb://` 路由，并生成或透传 `X-Request-Id`，校验 Bearer Token 后透传可信用户上下文。 |
 | `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、基础端口配置和 Token 刷新接口。 |
 | `xueyifang-user` | 已创建 | 用户服务，当前包含 Spring Boot 启动类和基础端口配置。 |
@@ -74,6 +74,7 @@
 | `xueyifang-common/xueyifang-common-web/src/main/java/com/xueyifang/cloud/common/web/autoconfigure/CommonWebAutoConfiguration.java` | Spring Boot 3 自动配置入口，仅在 Servlet Web 应用启用。 |
 | `xueyifang-common/xueyifang-common-web/src/main/java/com/xueyifang/cloud/common/web/exception/GlobalExceptionHandler.java` | Servlet 服务全局异常处理，输出统一响应结构。 |
 | `xueyifang-common/xueyifang-common-web/src/main/java/com/xueyifang/cloud/common/web/filter/RequestIdFilter.java` | Servlet requestId 生成、透传和 MDC 写入。 |
+| `xueyifang-common/xueyifang-common-web/src/main/java/com/xueyifang/cloud/common/web/filter/UserContextFilter.java` | Servlet 服务解析 Gateway 透传的 `X-User-*`，写入并清理 `UserContextHolder`。 |
 | `xueyifang-common/xueyifang-common-web/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` | Spring Boot 3 自动配置声明。 |
 | `xueyifang-gateway/pom.xml` | 网关服务 POM，依赖 Spring Cloud Gateway 和 Actuator。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/XueyifangGatewayApplication.java` | 网关服务启动类。 |

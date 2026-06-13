@@ -124,6 +124,7 @@
 
 - [x] 在 `common-core` 建立 JWT 签发、解析、刷新和 Bearer Token 解析基础能力。
 - [x] 在 Gateway 接入 Bearer Token 校验、公开路径白名单和可信 `X-User-*` 用户上下文透传。
+- [x] 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文。
 - [x] 在认证服务新增 `POST /auth/token/refresh`。
 
 验收标准：
@@ -172,6 +173,7 @@
 | 2026-06-14 | 阶段 3 | 已完成 | 补充通用响应、异常映射、Servlet requestId、Gateway requestId 测试；使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 增加 GitHub Actions 基础 CI，执行 Docker Compose 配置校验和 `mvn -B clean verify`。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 新增 JWT 公共能力、Gateway 鉴权过滤器和 Auth Token 刷新接口；相关模块测试通过。 |
+| 2026-06-14 | 阶段 4 | 进行中 | 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文，并补充 ThreadLocal 清理测试。 |
 
 ## 待确认事项
 
