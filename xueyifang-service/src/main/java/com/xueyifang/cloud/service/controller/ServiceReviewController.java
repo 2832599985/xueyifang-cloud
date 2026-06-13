@@ -2,10 +2,14 @@ package com.xueyifang.cloud.service.controller;
 
 import com.xueyifang.cloud.common.core.api.BaseResponse;
 import com.xueyifang.cloud.common.core.api.ResultUtils;
+import com.xueyifang.cloud.service.dto.ServiceReviewCreateRequest;
 import com.xueyifang.cloud.service.dto.ServiceReviewListResponse;
 import com.xueyifang.cloud.service.service.ServiceReviewService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +22,11 @@ public class ServiceReviewController {
 
     public ServiceReviewController(ServiceReviewService serviceReviewService) {
         this.serviceReviewService = serviceReviewService;
+    }
+
+    @PostMapping("/create")
+    public BaseResponse<Long> createReview(@Valid @RequestBody ServiceReviewCreateRequest request) {
+        return ResultUtils.success(serviceReviewService.createReview(request));
     }
 
     @GetMapping("/service/{serviceId}")

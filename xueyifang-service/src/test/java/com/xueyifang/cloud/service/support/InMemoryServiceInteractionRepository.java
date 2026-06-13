@@ -2,7 +2,9 @@ package com.xueyifang.cloud.service.support;
 
 import com.xueyifang.cloud.service.repository.FavoriteItem;
 import com.xueyifang.cloud.service.repository.FavoritePage;
+import com.xueyifang.cloud.service.repository.ReviewableOrder;
 import com.xueyifang.cloud.service.repository.ServiceInteractionRepository;
+import com.xueyifang.cloud.service.repository.ServiceReviewCreateCommand;
 import com.xueyifang.cloud.service.repository.ServiceReviewItem;
 import com.xueyifang.cloud.service.repository.ServiceReviewPage;
 
@@ -12,6 +14,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class InMemoryServiceInteractionRepository implements ServiceInteractionRepository {
 
@@ -21,7 +24,11 @@ public class InMemoryServiceInteractionRepository implements ServiceInteractionR
 
     private final List<ServiceReviewItem> reviews = new ArrayList<>();
 
+    private final Map<Long, ReviewableOrder> reviewableOrders = new LinkedHashMap<>();
+
     private long nextFavoriteId = 1L;
+
+    private long nextReviewId = 1L;
 
     public InMemoryServiceInteractionRepository(InMemoryServiceCatalogRepository serviceCatalogRepository) {
         this.serviceCatalogRepository = serviceCatalogRepository;
@@ -35,12 +42,19 @@ public class InMemoryServiceInteractionRepository implements ServiceInteractionR
 
     public void putReview(ServiceReviewItem review) {
         reviews.add(review);
+        nextReviewId = Math.max(nextReviewId, review.id() + 1);
+    }
+
+    public void putReviewableOrder(ReviewableOrder order) {
+        reviewableOrders.put(order.orderId(), order);
     }
 
     public void clearInteractions() {
         favorites.clear();
         reviews.clear();
+        reviewableOrders.clear();
         nextFavoriteId = 1L;
+        nextReviewId = 1L;
     }
 
     @Override
@@ -108,6 +122,34 @@ public class InMemoryServiceInteractionRepository implements ServiceInteractionR
     @Override
     public boolean existsReviewByOrderId(Long orderId) {
         return reviews.stream().anyMatch(review -> orderId.equals(review.orderId()));
+    }
+
+    @Override
+    public Optional<ReviewableOrder> findReviewableOrder(Long orderId) {
+        return Optional.ofNullable(reviewableOrders.get(orderId));
+    }
+
+    @Override
+    public Long createReview(ServiceReviewCreateCommand command) {
+        Long reviewId = nextReviewId++;
+        reviews.add(new ServiceReviewItem(
+                reviewId,
+                command.serviceId(),
+                command.orderId(),
+                command.buyerId(),
+                command.sellerId(),
+                command.rating(),
+                command.content(),
+                command.anonymous(),
+                LocalDateTime.parse("2026-06-14T03:00:00"),
+                "Reviewer " + command.buyerId(),
+                null));
+        return reviewId;
+    }
+
+    @Override
+    public void refreshServiceRating(Long serviceId) {
+        // In-memory tests assert review creation behavior, not aggregate rating persistence.
     }
 
     private String favoriteKey(Long userId, Long serviceId) {

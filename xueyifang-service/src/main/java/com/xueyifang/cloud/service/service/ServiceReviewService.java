@@ -4,13 +4,18 @@ import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.context.LoginUserContext;
 import com.xueyifang.cloud.common.core.context.UserContextHolder;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
+import com.xueyifang.cloud.service.dto.ServiceReviewCreateRequest;
 import com.xueyifang.cloud.service.dto.ServiceReviewListResponse;
 import com.xueyifang.cloud.service.dto.ServiceReviewResponse;
+import com.xueyifang.cloud.service.repository.ReviewableOrder;
 import com.xueyifang.cloud.service.repository.ServiceCatalogRepository;
 import com.xueyifang.cloud.service.repository.ServiceInteractionRepository;
 import com.xueyifang.cloud.service.repository.ServiceItem;
+import com.xueyifang.cloud.service.repository.ServiceReviewCreateCommand;
 import com.xueyifang.cloud.service.repository.ServiceReviewPage;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,6 +23,8 @@ import java.util.List;
 public class ServiceReviewService {
 
     private static final int ONLINE_STATUS = 1;
+
+    private static final int ORDER_COMPLETED = 4;
 
     private static final int ADMIN_ROLE = 2;
 
@@ -71,6 +78,45 @@ public class ServiceReviewService {
         return serviceInteractionRepository.existsReviewByOrderId(normalizedOrderId);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public Long createReview(ServiceReviewCreateRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "request must not be null");
+        }
+        LoginUserContext user = requireCurrentUser();
+        Long orderId = requirePositiveId(request.orderId(), "orderId");
+        int rating = normalizeRating(request.rating());
+        String content = requireReviewContent(request.content());
+
+        ReviewableOrder order = serviceInteractionRepository.findReviewableOrder(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_EXIST));
+        if (!user.userId().equals(order.buyerId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only the buyer can review the order");
+        }
+        if (!Integer.valueOf(ORDER_COMPLETED).equals(order.orderStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "only completed orders can be reviewed");
+        }
+        if (serviceInteractionRepository.existsReviewByOrderId(order.orderId())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has already been reviewed");
+        }
+
+        Long reviewId;
+        try {
+            reviewId = serviceInteractionRepository.createReview(new ServiceReviewCreateCommand(
+                    order.serviceId(),
+                    order.orderId(),
+                    order.buyerId(),
+                    order.sellerId(),
+                    rating,
+                    content,
+                    Boolean.TRUE.equals(request.anonymous())));
+        } catch (DuplicateKeyException exception) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has already been reviewed");
+        }
+        serviceInteractionRepository.refreshServiceRating(order.serviceId());
+        return reviewId;
+    }
+
     private boolean canViewService(ServiceItem service) {
         if (Integer.valueOf(ONLINE_STATUS).equals(service.status())) {
             return true;
@@ -83,6 +129,11 @@ public class ServiceReviewService {
 
     private boolean isAdmin(LoginUserContext user) {
         return Integer.valueOf(ADMIN_ROLE).equals(user.role());
+    }
+
+    private LoginUserContext requireCurrentUser() {
+        return UserContextHolder.get()
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_LOGIN, "login required"));
     }
 
     private Long requirePositiveId(Long value, String name) {
@@ -114,5 +165,23 @@ public class ServiceReviewService {
 
     private int calculatePages(long total, int pageSize) {
         return total == 0 ? 0 : (int) Math.ceil((double) total / pageSize);
+    }
+
+    private int normalizeRating(Integer rating) {
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "rating must be between 1 and 5");
+        }
+        return rating;
+    }
+
+    private String requireReviewContent(String content) {
+        if (content == null || content.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "content must not be blank");
+        }
+        String normalized = content.trim();
+        if (normalized.length() < 10 || normalized.length() > 500) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "content length must be between 10 and 500");
+        }
+        return normalized;
     }
 }

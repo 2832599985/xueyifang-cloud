@@ -1,5 +1,7 @@
 package com.xueyifang.cloud.service.repository;
 
+import java.util.Optional;
+
 public interface ServiceInteractionRepository {
 
     boolean addFavorite(Long userId, Long serviceId);
@@ -13,4 +15,10 @@ public interface ServiceInteractionRepository {
     ServiceReviewPage findReviewsByService(Long serviceId, int offset, int limit);
 
     boolean existsReviewByOrderId(Long orderId);
+
+    Optional<ReviewableOrder> findReviewableOrder(Long orderId);
+
+    Long createReview(ServiceReviewCreateCommand command);
+
+    void refreshServiceRating(Long serviceId);
 }

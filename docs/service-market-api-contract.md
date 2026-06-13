@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-本契约覆盖第一批服务市场迁移的服务浏览、发布者管理和互动最短链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价公开列表和订单评价状态。评价创建仍待订单最短链路迁移后接入。
+本契约覆盖第一批服务市场迁移的服务浏览、发布者管理和互动最短链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价公开列表和订单评价状态。
 
 ## 路由与鉴权
 
@@ -20,6 +20,7 @@
 | `POST` | `/favorite/collect` | 收藏服务，重复收藏保持幂等。 | 登录用户；仅可收藏自己可见的服务。 |
 | `DELETE` | `/favorite/collect/{serviceId}` | 取消收藏服务，未收藏时保持幂等。 | 登录用户 |
 | `GET` | `/favorite/myCollections` | 当前登录用户收藏列表。 | 登录用户 |
+| `POST` | `/review/create` | 创建服务评价，每个订单只能评价一次。 | 登录用户且为订单买家 |
 | `GET` | `/review/service/{serviceId}` | 服务评价公开列表，匿名评价隐藏评价人信息。 | 公开已上架服务；发布者或管理员可查看非公开服务评价。 |
 | `GET` | `/review/order/{orderId}/status` | 查询订单是否已评价。 | 登录用户 |
 
@@ -80,10 +81,19 @@
 | --- | --- |
 | `serviceId` | 服务 ID，必填。 |
 
-当前暂不实现 `POST /review/create`。评价创建需要订单归属和已完成状态校验，待 `xueyifang-trade` 订单最短链路落地后再接入；服务侧已提供 `service_review` 读取和订单评价状态查询。
+`POST /review/create` 请求：
+
+| 字段 | 说明 |
+| --- | --- |
+| `orderId` | 订单 ID，必填。 |
+| `rating` | 评分，`1` 到 `5`。 |
+| `content` | 评价内容，`10` 到 `500` 字。 |
+| `anonymous` | 是否匿名展示，默认 `false`。 |
+
+评价创建会校验订单存在、当前用户为订单买家、`service_order.order_status = 4` 已完成、且同一订单尚未评价。创建成功后刷新服务平均评分。
 
 ## 数据表
 
-服务市场当前接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review`。本地初始化脚本见 `deploy/docker/mysql/init/002-service.sql`。
+服务市场当前接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review`，并在评价创建时读取 `service_order` 的订单归属和完成状态。本地服务市场初始化脚本见 `deploy/docker/mysql/init/002-service.sql`，交易表初始化脚本见 `deploy/docker/mysql/init/003-trade.sql`。
 
 状态约定先按最短链路落地：`service.status = 0` 表示已下架，`1` 表示已上架公开可见，`2` 表示审核中，`3` 表示已驳回；非 `1` 状态仅发布者或管理员可见。`service.review_status = 1` 表示审核通过。

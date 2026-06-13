@@ -20,7 +20,7 @@
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
 | 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口。 |
-| 阶段 5 服务市场最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动读取链路，提供服务列表、详情、标签、发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价列表和订单评价状态接口。 |
+| 阶段 5 服务市场与交易最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动链路；`xueyifang-trade` 已接入订单创建、支付、取消、发货、确认完成和买卖家订单查询。 |
 
 ## 阶段计划
 
@@ -158,7 +158,11 @@
 - [x] 新增 `POST /service/publish`、`GET /service/myServices`、`PUT /service/{serviceId}`、`PUT /service/{serviceId}/online`、`PUT /service/{serviceId}/offline` 和 `DELETE /service/{serviceId}`。
 - [x] 服务发布、编辑、上下架和删除按登录用户、发布权限、发布者/管理员权限和状态机校验。
 - [x] 新增 `POST /favorite/collect`、`DELETE /favorite/collect/{serviceId}`、`GET /favorite/myCollections`、`GET /review/service/{serviceId}` 和 `GET /review/order/{orderId}/status`。
-- [x] 收藏写入保持幂等并同步服务收藏数；评价列表支持匿名展示，评价创建等待订单最短链路落地后接入。
+- [x] 收藏写入保持幂等并同步服务收藏数；评价列表支持匿名展示。
+- [x] 在 `xueyifang-trade` 接入 `service_order`、`service_order_log` 和 `wallet_transaction` 表。
+- [x] 新增 `POST /order/create`、`POST /order/{orderId}/pay`、`POST /order/{orderId}/cancel`、`POST /order/{orderId}/ship`、`POST /order/{orderId}/confirm`、`GET /order/myOrders`、`GET /order/mySellingOrders` 和 `GET /order/{orderId}`。
+- [x] 订单支付按钱包余额扣减和冻结金额流转；买家确认完成后结算给卖家，并记录钱包流水和订单日志。
+- [x] 回接 `POST /review/create`，按订单买家、已完成状态和订单唯一评价校验后写入评价并刷新服务评分。
 
 验收标准：
 
@@ -195,10 +199,12 @@
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 接入服务市场只读链路，新增服务列表、详情、标签接口和 `service`/`service_image`/`service_tag` 初始化脚本。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补服务发布、我的服务、编辑、上下架和逻辑删除接口，并补充图片替换和权限/状态单测。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补收藏、我的收藏、评价公开列表和订单评价状态接口，并补充互动表初始化脚本和单测。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-trade` 补订单最短链路，新增下单、支付、取消、发货、确认完成、买卖家列表和详情接口，并补充交易表初始化脚本和资金流单测。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 回接 `xueyifang-service` 评价创建接口，基于已完成订单校验买家归属、唯一评价并刷新服务评分。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
-- 第一批迁移是否采用“认证、用户、服务列表、订单最短链路”的顺序。
+- 第一批迁移已采用“认证、用户、服务列表、订单最短链路”的顺序；后续优先补退款、纠纷、钱包查询和系统字典。
 - 消息、系统、文件三个候选服务何时拆出，建议在主交易链路跑通后再决定。
 - Nacos 生产环境鉴权和外置数据库方案。

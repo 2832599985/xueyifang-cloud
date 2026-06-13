@@ -4,7 +4,9 @@ import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.context.LoginUserContext;
 import com.xueyifang.cloud.common.core.context.UserContextHolder;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
+import com.xueyifang.cloud.service.dto.ServiceReviewCreateRequest;
 import com.xueyifang.cloud.service.dto.ServiceReviewListResponse;
+import com.xueyifang.cloud.service.repository.ReviewableOrder;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.repository.ServiceReviewItem;
 import com.xueyifang.cloud.service.support.InMemoryServiceCatalogRepository;
@@ -58,6 +60,9 @@ class ServiceReviewServiceTest {
                 LocalDateTime.parse("2026-06-14T02:00:00"),
                 "Carol",
                 "carol.png"));
+        interactionRepository.putReviewableOrder(new ReviewableOrder(200L, 1L, 12L, 10L, 4));
+        interactionRepository.putReviewableOrder(new ReviewableOrder(201L, 1L, 12L, 10L, 3));
+        interactionRepository.putReviewableOrder(new ReviewableOrder(202L, 1L, 13L, 10L, 4));
         UserContextHolder.clear();
     }
 
@@ -101,8 +106,81 @@ class ServiceReviewServiceTest {
     }
 
     @Test
+    void createsReviewForCompletedBuyerOrder() {
+        UserContextHolder.set(new LoginUserContext(12L, 1, 1));
+
+        Long reviewId = reviewService.createReview(new ServiceReviewCreateRequest(
+                200L,
+                5,
+                "Really useful service.",
+                true));
+
+        assertThat(reviewId).isEqualTo(3L);
+        assertThat(reviewService.isOrderReviewed(200L)).isTrue();
+        ServiceReviewListResponse response = reviewService.listServiceReviews(1L, 1, 10);
+        assertThat(response.total()).isEqualTo(3);
+        assertThat(response.records().getFirst().reviewerName()).isEqualTo("匿名用户");
+    }
+
+    @Test
+    void rejectsReviewWhenOrderIsNotCompletedOrBuyerDoesNotMatch() {
+        UserContextHolder.set(new LoginUserContext(12L, 1, 1));
+
+        assertThatThrownBy(() -> reviewService.createReview(new ServiceReviewCreateRequest(
+                201L,
+                5,
+                "Not completed yet.",
+                false)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.ORDER_STATUS_ERROR.getCode()));
+
+        assertThatThrownBy(() -> reviewService.createReview(new ServiceReviewCreateRequest(
+                202L,
+                5,
+                "This belongs to another buyer.",
+                false)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.NO_AUTH_ERROR.getCode()));
+    }
+
+    @Test
+    void rejectsDuplicateReview() {
+        UserContextHolder.set(new LoginUserContext(12L, 1, 1));
+
+        assertThatThrownBy(() -> reviewService.createReview(new ServiceReviewCreateRequest(
+                100L,
+                5,
+                "Already reviewed order.",
+                false)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.ORDER_NOT_EXIST.getCode()));
+
+        interactionRepository.putReviewableOrder(new ReviewableOrder(100L, 1L, 12L, 10L, 4));
+        assertThatThrownBy(() -> reviewService.createReview(new ServiceReviewCreateRequest(
+                100L,
+                5,
+                "Already reviewed order.",
+                false)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.OPERATION_ERROR.getCode()));
+    }
+
+    @Test
     void rejectsInvalidPagination() {
         assertThatThrownBy(() -> reviewService.listServiceReviews(1L, 0, 10))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.PARAMS_ERROR.getCode()));
+    }
+
+    @Test
+    void rejectsInvalidReviewContent() {
+        UserContextHolder.set(new LoginUserContext(12L, 1, 1));
+
+        assertThatThrownBy(() -> reviewService.createReview(new ServiceReviewCreateRequest(
+                200L,
+                5,
+                "short",
+                false)))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(ErrorCode.PARAMS_ERROR.getCode()));
     }

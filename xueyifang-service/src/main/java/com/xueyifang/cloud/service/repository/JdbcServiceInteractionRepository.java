@@ -1,11 +1,16 @@
 package com.xueyifang.cloud.service.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class JdbcServiceInteractionRepository implements ServiceInteractionRepository {
@@ -141,6 +146,67 @@ public class JdbcServiceInteractionRepository implements ServiceInteractionRepos
                 Long.class,
                 orderId);
         return count != null && count > 0;
+    }
+
+    @Override
+    public Optional<ReviewableOrder> findReviewableOrder(Long orderId) {
+        return jdbcTemplate.query("""
+                        SELECT id, service_id, buyer_id, seller_id, order_status
+                        FROM service_order
+                        WHERE id = ? AND is_deleted = 0
+                        LIMIT 1
+                        """,
+                ps -> ps.setLong(1, orderId),
+                rs -> rs.next()
+                        ? Optional.of(new ReviewableOrder(
+                        rs.getLong("id"),
+                        rs.getLong("service_id"),
+                        rs.getLong("buyer_id"),
+                        rs.getLong("seller_id"),
+                        rs.getObject("order_status", Integer.class)))
+                        : Optional.empty());
+    }
+
+    @Override
+    public Long createReview(ServiceReviewCreateCommand command) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement("""
+                            INSERT INTO service_review
+                                (service_id, order_id, buyer_id, seller_id, rating, content, is_anonymous)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """,
+                    Statement.RETURN_GENERATED_KEYS);
+            statement.setLong(1, command.serviceId());
+            statement.setLong(2, command.orderId());
+            statement.setLong(3, command.buyerId());
+            statement.setLong(4, command.sellerId());
+            statement.setInt(5, command.rating());
+            statement.setString(6, command.content());
+            statement.setBoolean(7, command.anonymous());
+            return statement;
+        }, keyHolder);
+
+        Number key = keyHolder.getKey();
+        if (key == null) {
+            throw new IllegalStateException("review id was not generated");
+        }
+        return key.longValue();
+    }
+
+    @Override
+    public void refreshServiceRating(Long serviceId) {
+        jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET rating = COALESCE((
+                            SELECT ROUND(AVG(r.rating), 2)
+                            FROM service_review r
+                            WHERE r.service_id = ? AND r.is_deleted = 0
+                        ), 0)
+                        WHERE id = ? AND is_deleted = 0
+                        """,
+                serviceId,
+                serviceId);
     }
 
     private ServiceItem mapService(ResultSet rs) throws SQLException {
