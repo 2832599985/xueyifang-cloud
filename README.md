@@ -33,7 +33,9 @@
 - Gateway 入口生成或透传 `X-Request-Id`，并写回响应头。
 - GitHub Actions 基础 CI 覆盖 Docker Compose 配置校验和 Maven 构建验证。
 - `xueyifang-common-core` 提供 JWT 签发、解析、刷新和 Token 黑名单 key 约定；Gateway 校验 Bearer Token、拒绝已登出 Token，并向下游透传可信 `X-User-*` 用户上下文。
-- `xueyifang-auth` 已接入 `user` 表登录/注册、BCrypt 密码校验、Token 刷新和 Redis 黑名单登出。
+- `xueyifang-auth` 已接入 `user` 表登录/注册、BCrypt 密码校验、Token 刷新和 Redis 黑名单登出，并按 `user.publish_permission` 签发权限声明。
+- `xueyifang-user` 已接入 `user` 表当前用户、资料更新、改密和发布权限状态接口，并兼容旧 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` 路径。
+- 认证与用户接口契约见 [docs/auth-user-api-contract.md](docs/auth-user-api-contract.md)。
 
 ## 本地构建
 

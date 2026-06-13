@@ -38,6 +38,7 @@ public class InMemoryAuthUserRepository implements AuthUserRepository {
                 command.password(),
                 command.nickname(),
                 command.role(),
+                command.publishPermission(),
                 command.status());
         usersByUsername.put(user.username(), user);
         return user;

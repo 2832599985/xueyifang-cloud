@@ -26,6 +26,10 @@ spring:
         file-extension: yml
     gateway:
       routes:
+        - id: xueyifang-user-auth-compat
+          uri: lb://xueyifang-user
+          predicates:
+            - Path=/auth/currentUser,/auth/updateProfile,/auth/changePassword
         - id: xueyifang-auth
           uri: lb://xueyifang-auth
           predicates:

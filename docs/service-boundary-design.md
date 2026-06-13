@@ -9,8 +9,8 @@
 | 服务 | 端口 | 职责 | 旧接口前缀 |
 | --- | --- | --- | --- |
 | `xueyifang-gateway` | `8080` | 统一入口、路径路由、后续承接跨域、限流和基础鉴权。 | `/api/**` |
-| `xueyifang-auth` | `8100` | 登录、注册、登出、Token 签发和失效。 | `/auth/**` |
-| `xueyifang-user` | `8200` | 用户资料、角色、发布权限、账号状态。 | `/users/**`、`/permission/**` |
+| `xueyifang-auth` | `8100` | 登录、注册、登出、Token 签发和失效。 | `/auth/login`、`/auth/register`、`/auth/logout`、`/auth/token/refresh` |
+| `xueyifang-user` | `8200` | 用户资料、角色、发布权限、账号状态。 | `/users/**`、`/permission/**`，兼容 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` |
 | `xueyifang-service` | `8300` | 服务发布、浏览、服务图片关系、收藏、评价展示。 | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
 | `xueyifang-trade` | `8400` | 订单、支付状态、退款、纠纷、钱包流水。 | `/order/**`、`/wallet/**`、`/dispute/**` |
 
@@ -44,14 +44,14 @@
 
 ## 路由约定
 
-当前网关使用静态本地路由：
+当前网关使用 Nacos 服务发现和 `lb://` 路由：
 
 | 路由 ID | 目标地址 | Path |
 | --- | --- | --- |
-| `xueyifang-auth` | `http://localhost:8100` | `/auth/**` |
-| `xueyifang-user` | `http://localhost:8200` | `/users/**`、`/permission/**` |
-| `xueyifang-service` | `http://localhost:8300` | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
-| `xueyifang-trade` | `http://localhost:8400` | `/order/**`、`/wallet/**`、`/dispute/**` |
+| `xueyifang-user-auth-compat` | `lb://xueyifang-user` | `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` |
+| `xueyifang-auth` | `lb://xueyifang-auth` | `/auth/**` |
+| `xueyifang-user` | `lb://xueyifang-user` | `/users/**`、`/permission/**` |
+| `xueyifang-service` | `lb://xueyifang-service` | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
+| `xueyifang-trade` | `lb://xueyifang-trade` | `/order/**`、`/wallet/**`、`/dispute/**` |
 
-接入注册中心后，目标地址改为 `lb://服务名`，路由路径保持兼容。
-
+旧前端仍可调用已迁移的 `/auth/currentUser` 等路径；新增前端代码优先使用 `/users/me` 系列路径。

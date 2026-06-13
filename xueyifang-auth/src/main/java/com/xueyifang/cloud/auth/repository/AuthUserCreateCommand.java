@@ -7,5 +7,6 @@ public record AuthUserCreateCommand(
         String phone,
         String email,
         String role,
+        Integer publishPermission,
         Integer status) {
 }

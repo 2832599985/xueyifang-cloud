@@ -22,7 +22,7 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
     @Override
     public Optional<AuthUser> findByUsername(String username) {
         return jdbcTemplate.query("""
-                        SELECT id, username, password, nickname, role, status
+                        SELECT id, username, password, nickname, role, publish_permission, status
                         FROM `user`
                         WHERE username = ? AND is_deleted = 0
                         LIMIT 1
@@ -49,8 +49,8 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("""
                             INSERT INTO `user`
-                            (username, password, nickname, phone, email, role, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            (username, password, nickname, phone, email, role, publish_permission, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """,
                     Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, command.username());
@@ -59,7 +59,8 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
             statement.setString(4, command.phone());
             statement.setString(5, command.email());
             statement.setString(6, command.role());
-            statement.setInt(7, command.status());
+            statement.setInt(7, command.publishPermission());
+            statement.setInt(8, command.status());
             return statement;
         }, keyHolder);
 
@@ -75,7 +76,7 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
 
     private Optional<AuthUser> findById(Long id) {
         return jdbcTemplate.query("""
-                        SELECT id, username, password, nickname, role, status
+                        SELECT id, username, password, nickname, role, publish_permission, status
                         FROM `user`
                         WHERE id = ? AND is_deleted = 0
                         LIMIT 1
@@ -91,6 +92,7 @@ public class JdbcAuthUserRepository implements AuthUserRepository {
                 rs.getString("password"),
                 rs.getString("nickname"),
                 rs.getString("role"),
+                rs.getObject("publish_permission", Integer.class),
                 rs.getInt("status"));
     }
 }

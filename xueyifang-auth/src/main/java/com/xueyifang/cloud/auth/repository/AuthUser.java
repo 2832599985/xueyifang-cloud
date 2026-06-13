@@ -6,5 +6,6 @@ public record AuthUser(
         String password,
         String nickname,
         String role,
+        Integer publishPermission,
         Integer status) {
 }

@@ -52,6 +52,7 @@ public class AuthService {
                 normalizeOptional(request.phone()),
                 normalizeOptional(request.email()),
                 AuthUserRole.STUDENT.databaseValue(),
+                AuthUserRole.STUDENT.publishPermission(),
                 ACTIVE_STATUS);
 
         try {
@@ -74,8 +75,11 @@ public class AuthService {
         }
 
         AuthUserRole role = AuthUserRole.fromDatabaseValue(user.role());
-        JwtToken token = jwtTokenService.createToken(user.id(), role.tokenCode(), role.publishPermission());
-        return LoginResponse.from(token, user, role.tokenCode(), role.publishPermission());
+        int publishPermission = user.publishPermission() != null
+                ? user.publishPermission()
+                : role.publishPermission();
+        JwtToken token = jwtTokenService.createToken(user.id(), role.tokenCode(), publishPermission);
+        return LoginResponse.from(token, user, role.tokenCode(), publishPermission);
     }
 
     private BusinessException loginFailed() {

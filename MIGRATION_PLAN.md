@@ -19,7 +19,7 @@
 | Git 初始化 | 已完成 | 已创建本地 Git 仓库，并加入基础忽略和换行规则。 |
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
-| 阶段 4 认证基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出和 Redis Token 黑名单。 |
+| 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口。 |
 
 ## 阶段计划
 
@@ -128,6 +128,8 @@
 - [x] 在认证服务新增 `POST /auth/token/refresh`。
 - [x] 在认证服务接入 `user` 表，新增 `POST /auth/login` 和 `POST /auth/register`。
 - [x] 接入 Redis Token 黑名单，新增 `POST /auth/logout`，并让 Gateway 拒绝已登出 Token。
+- [x] 在用户服务接入 `user` 表，新增当前用户、资料更新、改密和发布权限状态接口。
+- [x] 保留 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` 兼容路径，并输出认证与用户接口契约。
 
 验收标准：
 
@@ -177,6 +179,7 @@
 | 2026-06-14 | 阶段 4 | 进行中 | 新增 JWT 公共能力、Gateway 鉴权过滤器和 Auth Token 刷新接口；相关模块测试通过。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文，并补充 ThreadLocal 清理测试。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-auth` 接入 `user` 表登录/注册、BCrypt 密码校验、Redis Token 黑名单和登出接口；Gateway 增加黑名单 Token 拒绝。 |
+| 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-user` 接入 `user` 表当前用户、资料更新、改密和发布权限状态接口；Gateway 将旧 `/auth/currentUser` 等资料路径兼容转发到用户服务。 |
 
 ## 待确认事项
 

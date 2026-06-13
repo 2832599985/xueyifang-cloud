@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中；阶段 3 基础设施已完成，阶段 4 已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出和 Redis Token 黑名单。
+- 当前状态：阶段 4 认证与用户迁移进行中；阶段 3 基础设施已完成，阶段 4 已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口。
 
 ## 根目录索引
 
@@ -31,10 +31,11 @@
 | `docs/original-project-inventory.md` | 文档 | 原后端和前端盘点，包含业务域、API、数据表、前端页面、横切能力和拆分风险。 |
 | `docs/service-boundary-design.md` | 文档 | 服务拆分边界、暂缓服务、第一批迁移顺序和网关路由约定。 |
 | `docs/local-infrastructure.md` | 文档 | 本地 MySQL、Redis、Nacos 启动方式和应用接入说明。 |
+| `docs/auth-user-api-contract.md` | 文档 | 阶段 4 认证与用户资料接口契约，记录新旧兼容路径和 Token 约定。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
-| `deploy/docker/mysql/init/001-user.sql` | SQL | 本地 MySQL 初始化 `user` 表，供认证服务登录/注册使用。 |
+| `deploy/docker/mysql/init/001-user.sql` | SQL | 本地 MySQL 初始化 `user` 表，供认证和用户服务使用。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
 | `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
@@ -50,8 +51,8 @@
 | `xueyifang-common-core` | 已创建 | 通用响应、错误码、业务异常、用户上下文和链路常量，避免绑定 Web 技术栈。 |
 | `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；自动装配统一异常处理、requestId 过滤器和用户上下文过滤器。 |
 | `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前使用 Nacos 服务发现和 `lb://` 路由，并生成或透传 `X-Request-Id`，校验 Bearer Token、拒绝黑名单 Token 后透传可信用户上下文。 |
-| `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、Token 刷新、退出登录和 Redis Token 黑名单。 |
-| `xueyifang-user` | 已创建 | 用户服务，当前包含 Spring Boot 启动类和基础端口配置。 |
+| `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、Token 刷新、退出登录、Redis Token 黑名单，并按 `user.publish_permission` 签发权限声明。 |
+| `xueyifang-user` | 已创建 | 用户服务，当前包含当前用户、资料更新、改密、发布权限状态和旧 `/auth/*` 资料路径兼容接口。 |
 | `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类和基础端口配置。 |
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类和基础端口配置。 |
 
@@ -86,19 +87,24 @@
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/auth/RedisReactiveTokenBlacklistService.java` | Gateway Redis Token 黑名单查询实现。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayAuthFilter.java` | Gateway Bearer Token 校验、错误响应和 `X-User-*` 用户上下文透传。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayRequestIdFilter.java` | Gateway requestId 生成、透传、响应回写和 MDC 写入。 |
-| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT 和 `lb://` 路由配置。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由和旧 `/auth/*` 用户资料路径兼容路由配置。 |
 | `xueyifang-auth/pom.xml` | 认证服务 POM。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthController.java` | 认证入口，提供 `POST /auth/register`、`POST /auth/login` 和 `POST /auth/logout`。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthTokenController.java` | Token 刷新接口，当前提供 `POST /auth/token/refresh`，并拒绝黑名单 Token。 |
-| `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/repository/JdbcAuthUserRepository.java` | 基于 `JdbcTemplate` 的 `user` 表认证数据访问。 |
+| `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/repository/JdbcAuthUserRepository.java` | 基于 `JdbcTemplate` 的 `user` 表认证数据访问，读取发布权限用于签发 JWT。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/service/AuthService.java` | 登录、注册、BCrypt 密码校验和 JWT 签发业务逻辑。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/service/AuthTokenService.java` | Token 刷新和退出登录黑名单业务逻辑。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/token/RedisTokenBlacklistService.java` | Auth 服务 Redis Token 黑名单写入和查询实现。 |
 | `xueyifang-auth/src/main/resources/application.yml` | 认证服务端口、服务名、Nacos、MySQL、Redis 和 JWT 配置。 |
-| `xueyifang-user/pom.xml` | 用户服务 POM。 |
+| `xueyifang-user/pom.xml` | 用户服务 POM，依赖公共 Web、JDBC、MySQL 和 BCrypt。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/XueyifangUserApplication.java` | 用户服务启动类。 |
-| `xueyifang-user/src/main/resources/application.yml` | 用户服务端口和服务名配置。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/UserProfileController.java` | 用户资料新接口，提供 `/users/me`、`/users/me/profile` 和 `/users/me/password`。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/AuthUserCompatibilityController.java` | 旧 `/auth/currentUser`、`/auth/updateProfile` 和 `/auth/changePassword` 兼容入口。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/PermissionController.java` | 发布权限申请和状态查询入口。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/repository/JdbcUserAccountRepository.java` | 基于 `JdbcTemplate` 的 `user` 表资料和权限数据访问。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/service/UserProfileService.java` | 当前用户资料、资料更新、改密和发布权限状态业务逻辑。 |
+| `xueyifang-user/src/main/resources/application.yml` | 用户服务端口、服务名、Nacos 和 MySQL 配置。 |
 | `xueyifang-service/pom.xml` | 服务市场 POM。 |
 | `xueyifang-service/src/main/java/com/xueyifang/cloud/service/XueyifangServiceApplication.java` | 服务市场启动类。 |
 | `xueyifang-service/src/main/resources/application.yml` | 服务市场端口和服务名配置。 |
@@ -108,7 +114,6 @@
 
 ## Todo
 
-- 迁移当前用户、资料更新和改密接口的数据访问能力。
-- 迁移用户资料和角色权限基础能力，并让业务服务消费 `X-User-*` 用户上下文。
+- 让服务市场和交易服务在迁移业务接口时消费 `X-User-*` 用户上下文。
 - 启动本地 Nacos 后，做一次网关到业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。

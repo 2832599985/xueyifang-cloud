@@ -87,6 +87,7 @@ class AuthServiceTest {
                 passwordEncoder.encode("secret123"),
                 "Disabled",
                 "STUDENT",
+                1,
                 0));
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("disabled", "secret123")))
