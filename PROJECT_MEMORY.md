@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 0 初始化已完成；已建立迁移计划、项目记忆、Git 仓库和可构建的 Spring Cloud 多模块骨架。
+- 当前状态：阶段 1 原项目盘点已完成；下一步进入服务边界设计和模块骨架校准。
 
 ## 根目录索引
 
@@ -26,7 +26,8 @@
 | `MIGRATION_PLAN.md` | 文档 | 迁移阶段、拆分策略、进度日志。 |
 | `PROJECT_MEMORY.md` | 文档 | 项目索引、功能短评和 Todo。 |
 | `pom.xml` | Maven | 根父工程，统一 Java、Spring Boot、Spring Cloud 版本和模块聚合。 |
-| `docs/` | 目录 | 后续放架构、模块盘点和接口设计文档。 |
+| `docs/` | 目录 | 架构、模块盘点和接口设计文档。 |
+| `docs/original-project-inventory.md` | 文档 | 原后端和前端盘点，包含业务域、API、数据表、前端页面、横切能力和拆分风险。 |
 | `deploy/` | 目录 | 后续放 Docker、Nacos、数据库等部署配置。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
@@ -68,6 +69,6 @@
 
 ## Todo
 
-- 拉取或读取原后端项目，输出模块盘点。
-- 拉取或读取原前端项目，输出页面和接口盘点。
+- 阶段 2 校准服务边界，重点评估 `xueyifang-content` 改名为 `xueyifang-service`，并新增 `xueyifang-trade`。
+- 设计第一批迁移顺序，建议认证、用户、服务列表、订单最短链路。
 - 确认注册中心和配置中心方案，默认优先评估 Nacos。
