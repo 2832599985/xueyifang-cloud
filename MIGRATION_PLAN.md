@@ -19,7 +19,7 @@
 | Git 初始化 | 已完成 | 已创建本地 Git 仓库，并加入基础忽略和换行规则。 |
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
-| 阶段 4 认证基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验和 `/auth/token/refresh`。 |
+| 阶段 4 认证基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出和 Redis Token 黑名单。 |
 
 ## 阶段计划
 
@@ -126,6 +126,8 @@
 - [x] 在 Gateway 接入 Bearer Token 校验、公开路径白名单和可信 `X-User-*` 用户上下文透传。
 - [x] 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文。
 - [x] 在认证服务新增 `POST /auth/token/refresh`。
+- [x] 在认证服务接入 `user` 表，新增 `POST /auth/login` 和 `POST /auth/register`。
+- [x] 接入 Redis Token 黑名单，新增 `POST /auth/logout`，并让 Gateway 拒绝已登出 Token。
 
 验收标准：
 
@@ -174,6 +176,7 @@
 | 2026-06-14 | 阶段 3 | 已完成 | 增加 GitHub Actions 基础 CI，执行 Docker Compose 配置校验和 `mvn -B clean verify`。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 新增 JWT 公共能力、Gateway 鉴权过滤器和 Auth Token 刷新接口；相关模块测试通过。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文，并补充 ThreadLocal 清理测试。 |
+| 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-auth` 接入 `user` 表登录/注册、BCrypt 密码校验、Redis Token 黑名单和登出接口；Gateway 增加黑名单 Token 拒绝。 |
 
 ## 待确认事项
 

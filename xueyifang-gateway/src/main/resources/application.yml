@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: xueyifang-gateway
+  data:
+    redis:
+      host: ${XUEYIFANG_REDIS_HOST:127.0.0.1}
+      port: ${XUEYIFANG_REDIS_PORT:6379}
+      password: ${XUEYIFANG_REDIS_PASSWORD:}
+      database: ${XUEYIFANG_REDIS_DATABASE:0}
   config:
     import: optional:nacos:${spring.application.name}.yml?group=${NACOS_GROUP:DEFAULT_GROUP}
   cloud:

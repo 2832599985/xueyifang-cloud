@@ -106,7 +106,8 @@ public class GlobalExceptionHandler {
         }
 
         if (code == ErrorCode.DUPLICATE_SUBMIT.getCode()
-                || code == ErrorCode.USER_STUDENT_ID_EXIST.getCode()) {
+                || code == ErrorCode.USER_STUDENT_ID_EXIST.getCode()
+                || code == ErrorCode.USER_USERNAME_EXIST.getCode()) {
             return HttpStatus.CONFLICT;
         }
 

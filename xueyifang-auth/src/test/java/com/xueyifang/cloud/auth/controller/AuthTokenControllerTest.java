@@ -1,6 +1,8 @@
 package com.xueyifang.cloud.auth.controller;
 
 import com.xueyifang.cloud.auth.dto.TokenRefreshResponse;
+import com.xueyifang.cloud.auth.service.AuthTokenService;
+import com.xueyifang.cloud.auth.support.InMemoryTokenBlacklistService;
 import com.xueyifang.cloud.common.core.api.BaseResponse;
 import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.auth.AuthConstants;
@@ -29,7 +31,12 @@ class AuthTokenControllerTest {
             new JwtTokenProperties(SECRET, Duration.ofDays(7), JwtTokenProperties.DEFAULT_ISSUER),
             Clock.fixed(NOW, ZoneOffset.UTC));
 
-    private final AuthTokenController controller = new AuthTokenController(jwtTokenService);
+    private final InMemoryTokenBlacklistService tokenBlacklistService = new InMemoryTokenBlacklistService(
+            Clock.fixed(NOW, ZoneOffset.UTC));
+
+    private final AuthTokenService authTokenService = new AuthTokenService(jwtTokenService, tokenBlacklistService);
+
+    private final AuthTokenController controller = new AuthTokenController(authTokenService);
 
     @Test
     void refreshesBearerToken() {
@@ -55,5 +62,15 @@ class AuthTokenControllerTest {
         assertThatThrownBy(() -> controller.refresh(null, null))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(ErrorCode.USER_NOT_LOGIN.getCode()));
+    }
+
+    @Test
+    void rejectsBlacklistedToken() {
+        JwtToken token = jwtTokenService.createToken(21L, 2, 1);
+        tokenBlacklistService.blacklist(token.token(), token.expiresAt());
+
+        assertThatThrownBy(() -> controller.refresh(AuthConstants.BEARER_PREFIX + token.token(), null))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.TOKEN_INVALID.getCode()));
     }
 }

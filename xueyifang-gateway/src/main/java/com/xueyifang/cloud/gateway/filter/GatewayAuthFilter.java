@@ -10,6 +10,7 @@ import com.xueyifang.cloud.common.core.auth.AuthTokenUtils;
 import com.xueyifang.cloud.common.core.auth.JwtTokenClaims;
 import com.xueyifang.cloud.common.core.auth.JwtTokenService;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
+import com.xueyifang.cloud.gateway.auth.ReactiveTokenBlacklistService;
 import com.xueyifang.cloud.gateway.config.GatewayAuthProperties;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -40,14 +41,17 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
 
     private final JwtTokenService jwtTokenService;
 
+    private final ReactiveTokenBlacklistService tokenBlacklistService;
+
     private final ObjectMapper objectMapper;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public GatewayAuthFilter(GatewayAuthProperties properties, JwtTokenService jwtTokenService,
-                             ObjectMapper objectMapper) {
+                             ReactiveTokenBlacklistService tokenBlacklistService, ObjectMapper objectMapper) {
         this.properties = properties;
         this.jwtTokenService = jwtTokenService;
+        this.tokenBlacklistService = tokenBlacklistService;
         this.objectMapper = objectMapper;
     }
 
@@ -68,12 +72,19 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
             return writeError(trustedExchange, ErrorCode.USER_NOT_LOGIN.getCode(), "请先登录");
         }
 
-        try {
-            JwtTokenClaims claims = jwtTokenService.parseToken(token.get());
-            return chain.filter(addUserContextHeaders(trustedExchange, claims));
-        } catch (BusinessException exception) {
-            return writeError(trustedExchange, exception.getCode(), exception.getMessage());
-        }
+        String rawToken = token.get();
+        return isBlacklisted(rawToken).flatMap(blacklisted -> {
+            if (blacklisted) {
+                return writeError(trustedExchange, ErrorCode.TOKEN_INVALID.getCode(), "Token has been logged out");
+            }
+
+            try {
+                JwtTokenClaims claims = jwtTokenService.parseToken(rawToken);
+                return chain.filter(addUserContextHeaders(trustedExchange, claims));
+            } catch (BusinessException exception) {
+                return writeError(trustedExchange, exception.getCode(), exception.getMessage());
+            }
+        });
     }
 
     @Override
@@ -87,12 +98,23 @@ public class GatewayAuthFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        try {
-            JwtTokenClaims claims = jwtTokenService.parseToken(token.get());
-            return chain.filter(addUserContextHeaders(exchange, claims));
-        } catch (BusinessException exception) {
-            return chain.filter(exchange);
-        }
+        String rawToken = token.get();
+        return isBlacklisted(rawToken).flatMap(blacklisted -> {
+            if (blacklisted) {
+                return chain.filter(exchange);
+            }
+
+            try {
+                JwtTokenClaims claims = jwtTokenService.parseToken(rawToken);
+                return chain.filter(addUserContextHeaders(exchange, claims));
+            } catch (BusinessException exception) {
+                return chain.filter(exchange);
+            }
+        });
+    }
+
+    private Mono<Boolean> isBlacklisted(String token) {
+        return tokenBlacklistService.isBlacklisted(token).defaultIfEmpty(false);
     }
 
     private ServerWebExchange removeUntrustedUserHeaders(ServerWebExchange exchange) {

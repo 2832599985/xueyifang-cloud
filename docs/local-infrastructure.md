@@ -27,6 +27,8 @@ http://localhost:8848/nacos
 
 本地 Compose 关闭了 Nacos 鉴权，只用于开发环境。生产环境必须开启鉴权，并改用独立数据库持久化 Nacos 配置。
 
+MySQL 首次初始化会执行 `deploy/docker/mysql/init/001-user.sql`，创建认证服务当前需要的 `user` 表。若本地已经存在旧的 `mysql-data` volume，Docker 不会重复执行初始化脚本；需要重建初始化数据时请先自行备份并清理对应 volume。
+
 ## 应用接入
 
 每个应用服务都配置了：
@@ -38,6 +40,13 @@ http://localhost:8848/nacos
 | `NACOS_PASSWORD` | `nacos` | 预留给开启鉴权后的密码。 |
 | `NACOS_NAMESPACE` | 空 | 默认 public 命名空间。 |
 | `NACOS_GROUP` | `DEFAULT_GROUP` | 默认配置和注册分组。 |
+| `XUEYIFANG_MYSQL_URL` | `jdbc:mysql://127.0.0.1:3306/xueyifang?...` | Auth 服务本地 MySQL 连接串。 |
+| `XUEYIFANG_MYSQL_USERNAME` | `root` | Auth 服务本地 MySQL 用户名。 |
+| `XUEYIFANG_MYSQL_PASSWORD` | `123123123` | Auth 服务本地 MySQL 密码。 |
+| `XUEYIFANG_REDIS_HOST` | `127.0.0.1` | Auth 和 Gateway 使用的 Redis 地址。 |
+| `XUEYIFANG_REDIS_PORT` | `6379` | Auth 和 Gateway 使用的 Redis 端口。 |
+| `XUEYIFANG_REDIS_PASSWORD` | 空 | Auth 和 Gateway 使用的 Redis 密码。 |
+| `XUEYIFANG_REDIS_DATABASE` | `0` | Auth 和 Gateway 使用的 Redis database。 |
 | `XUEYIFANG_JWT_SECRET` | `xueyifang-secret-key-2025-graduation-project` | 本地 JWT 签名密钥，生产环境必须覆盖为独立密钥。 |
 | `XUEYIFANG_JWT_EXPIRATION` | `604800000ms` | JWT 有效期，默认 7 天。 |
 | `XUEYIFANG_JWT_ISSUER` | `xueyifang` | JWT 签发方。 |

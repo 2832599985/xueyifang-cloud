@@ -20,6 +20,7 @@ public enum ErrorCode {
     USER_NO_PUBLISH_PERMISSION(40106, "无发布权限"),
     USER_PERMISSION_REVIEWING(40107, "权限审核中"),
     USER_PERMISSION_REJECTED(40108, "权限申请已被拒绝"),
+    USER_USERNAME_EXIST(40109, "username already exists"),
 
     SERVICE_NOT_EXIST(40201, "服务不存在"),
     SERVICE_OFFLINE(40202, "服务已下架"),

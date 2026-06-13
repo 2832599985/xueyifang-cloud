@@ -1,13 +1,13 @@
 package com.xueyifang.cloud.auth.controller;
 
 import com.xueyifang.cloud.auth.dto.TokenRefreshResponse;
+import com.xueyifang.cloud.auth.service.AuthTokenService;
 import com.xueyifang.cloud.common.core.api.BaseResponse;
 import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.api.ResultUtils;
 import com.xueyifang.cloud.common.core.auth.AuthConstants;
 import com.xueyifang.cloud.common.core.auth.AuthTokenUtils;
 import com.xueyifang.cloud.common.core.auth.JwtToken;
-import com.xueyifang.cloud.common.core.auth.JwtTokenService;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,10 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth/token")
 public class AuthTokenController {
 
-    private final JwtTokenService jwtTokenService;
+    private final AuthTokenService authTokenService;
 
-    public AuthTokenController(JwtTokenService jwtTokenService) {
-        this.jwtTokenService = jwtTokenService;
+    public AuthTokenController(AuthTokenService authTokenService) {
+        this.authTokenService = authTokenService;
     }
 
     @PostMapping("/refresh")
@@ -31,7 +31,7 @@ public class AuthTokenController {
         String token = AuthTokenUtils.resolveToken(authorization, legacyToken)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_LOGIN, "请先登录"));
 
-        JwtToken refreshedToken = jwtTokenService.refreshToken(token);
+        JwtToken refreshedToken = authTokenService.refreshToken(token);
         return ResultUtils.success(TokenRefreshResponse.from(refreshedToken));
     }
 }

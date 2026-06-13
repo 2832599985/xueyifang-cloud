@@ -11,11 +11,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,9 +33,12 @@ class GatewayAuthFilterTest {
             new JwtTokenProperties(SECRET, Duration.ofDays(7), JwtTokenProperties.DEFAULT_ISSUER),
             Clock.fixed(NOW, ZoneOffset.UTC));
 
+    private final Set<String> blacklistedTokens = new HashSet<>();
+
     private final GatewayAuthFilter filter = new GatewayAuthFilter(
             new GatewayAuthProperties(),
             jwtTokenService,
+            token -> Mono.just(blacklistedTokens.contains(token)),
             new ObjectMapper());
 
     @Test
@@ -104,5 +110,26 @@ class GatewayAuthFilterTest {
         assertThat(exchange.getResponse().getBodyAsString().block())
                 .contains("\"code\":" + ErrorCode.TOKEN_INVALID.getCode())
                 .contains("Token无效");
+    }
+
+    @Test
+    void rejectsBlacklistedToken() {
+        JwtToken token = jwtTokenService.createToken(123L, 2, 1);
+        blacklistedTokens.add(token.token());
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/wallet/balance")
+                .header(AuthConstants.AUTHORIZATION_HEADER, AuthConstants.BEARER_PREFIX + token.token())
+                .build());
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+
+        filter.filter(exchange, chainExchange -> {
+            chainCalled.set(true);
+            return chainExchange.getResponse().setComplete();
+        }).block();
+
+        assertThat(chainCalled).isFalse();
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(exchange.getResponse().getBodyAsString().block())
+                .contains("\"code\":" + ErrorCode.TOKEN_INVALID.getCode())
+                .contains("Token has been logged out");
     }
 }
