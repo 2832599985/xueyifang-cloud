@@ -6,7 +6,9 @@ import com.xueyifang.cloud.common.core.context.UserContextHolder;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
 import com.xueyifang.cloud.service.dto.ServiceDetailResponse;
 import com.xueyifang.cloud.service.dto.ServiceListResponse;
+import com.xueyifang.cloud.service.dto.ServicePublishRequest;
 import com.xueyifang.cloud.service.dto.ServiceTagResponse;
+import com.xueyifang.cloud.service.dto.ServiceUpdateRequest;
 import com.xueyifang.cloud.service.repository.ServiceImage;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.support.InMemoryServiceCatalogRepository;
@@ -46,7 +48,7 @@ class ServiceCatalogServiceTest {
     @Test
     void listsOnlineServicesForAnonymousUsers() {
         ServiceListResponse response = serviceCatalogService.listServices(
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
 
         assertThat(response.total()).isEqualTo(1);
         assertThat(response.records()).hasSize(1);
@@ -58,7 +60,7 @@ class ServiceCatalogServiceTest {
     @Test
     void filtersByKeywordAndTag() {
         ServiceListResponse response = serviceCatalogService.listServices(
-                "java", 1L, null, null, null, 1, 20);
+                "java", 1L, null, null, null, null, 1, 20);
 
         assertThat(response.total()).isEqualTo(1);
         assertThat(response.records().getFirst().title()).isEqualTo("Java tutoring");
@@ -95,7 +97,7 @@ class ServiceCatalogServiceTest {
         UserContextHolder.set(new LoginUserContext(99L, 2, 1));
 
         ServiceListResponse response = serviceCatalogService.listServices(
-                null, null, null, null, 0, 1, 10);
+                null, null, null, null, null, 0, 1, 10);
 
         assertThat(response.total()).isEqualTo(1);
         assertThat(response.records().getFirst().serviceId()).isEqualTo(2L);
@@ -112,9 +114,97 @@ class ServiceCatalogServiceTest {
     @Test
     void rejectsInvalidPagination() {
         assertThatThrownBy(() -> serviceCatalogService.listServices(
-                null, null, null, null, null, 0, 10))
+                null, null, null, null, null, null, 0, 10))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(ErrorCode.PARAMS_ERROR.getCode()));
+    }
+
+    @Test
+    void publishesServiceForUserWithPermission() {
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+
+        Long serviceId = serviceCatalogService.publishService(publishRequest());
+        ServiceDetailResponse response = serviceCatalogService.getServiceDetail(serviceId);
+
+        assertThat(response.publisherId()).isEqualTo(10L);
+        assertThat(response.title()).isEqualTo("Published service");
+        assertThat(response.status()).isEqualTo(1);
+        assertThat(response.coverImage()).isEqualTo("published-cover.jpg");
+        assertThat(response.images()).extracting("imageUrl")
+                .containsExactly("published-cover.jpg", "published-detail.jpg");
+    }
+
+    @Test
+    void rejectsPublishWithoutPermission() {
+        UserContextHolder.set(new LoginUserContext(10L, 1, 0));
+
+        assertThatThrownBy(() -> serviceCatalogService.publishService(publishRequest()))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.USER_NO_PUBLISH_PERMISSION.getCode()));
+    }
+
+    @Test
+    void listsMyServicesForCurrentPublisher() {
+        UserContextHolder.set(new LoginUserContext(11L, 1, 1));
+
+        ServiceListResponse response = serviceCatalogService.listMyServices(null, 1, 10);
+
+        assertThat(response.total()).isEqualTo(1);
+        assertThat(response.records().getFirst().serviceId()).isEqualTo(2L);
+    }
+
+    @Test
+    void updatesOfflineServiceForOwnerAndReplacesImages() {
+        UserContextHolder.set(new LoginUserContext(11L, 1, 1));
+
+        serviceCatalogService.updateService(2L, updateRequest());
+        ServiceDetailResponse response = serviceCatalogService.getServiceDetail(2L);
+
+        assertThat(response.title()).isEqualTo("Updated service");
+        assertThat(response.price()).isEqualByComparingTo("35.00");
+        assertThat(response.coverImage()).isEqualTo("updated-cover.jpg");
+        assertThat(response.images()).extracting("imageUrl")
+                .containsExactly("updated-cover.jpg", "updated-detail.jpg");
+    }
+
+    @Test
+    void rejectsEditingOnlineService() {
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+
+        assertThatThrownBy(() -> serviceCatalogService.updateService(1L, updateRequest()))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.SERVICE_CANNOT_EDIT.getCode()));
+    }
+
+    @Test
+    void takesServiceOfflineAndOnlineAgain() {
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+
+        serviceCatalogService.offlineService(1L);
+        assertThat(serviceCatalogService.getServiceDetail(1L).status()).isZero();
+
+        serviceCatalogService.onlineService(1L);
+        assertThat(serviceCatalogService.getServiceDetail(1L).status()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsStatusChangeByNonOwner() {
+        UserContextHolder.set(new LoginUserContext(12L, 1, 1));
+
+        assertThatThrownBy(() -> serviceCatalogService.offlineService(1L))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.SERVICE_NOT_OWNER.getCode()));
+    }
+
+    @Test
+    void deletesOfflineServiceForOwner() {
+        UserContextHolder.set(new LoginUserContext(11L, 1, 1));
+
+        serviceCatalogService.deleteService(2L);
+
+        assertThatThrownBy(() -> serviceCatalogService.getServiceDetail(2L))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.SERVICE_NOT_EXIST.getCode()));
     }
 
     private ServiceItem service(Long id, Long publisherId, String title, Integer status, Long tagId) {
@@ -140,5 +230,51 @@ class ServiceCatalogServiceTest {
                 "cover.jpg",
                 LocalDateTime.parse("2026-06-14T00:00:00"),
                 LocalDateTime.parse("2026-06-14T00:00:00"));
+    }
+
+    private ServicePublishRequest publishRequest() {
+        return new ServicePublishRequest(
+                null,
+                "Published service",
+                null,
+                "description Published service",
+                1L,
+                "study",
+                1L,
+                "category",
+                1L,
+                "computer science",
+                BigDecimal.valueOf(25),
+                "hour",
+                "library",
+                null,
+                List.of("published-cover.jpg", "published-detail.jpg"),
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private ServiceUpdateRequest updateRequest() {
+        return new ServiceUpdateRequest(
+                "Updated service",
+                null,
+                "description Updated service",
+                null,
+                1L,
+                "study",
+                1L,
+                "category",
+                1L,
+                "computer science",
+                BigDecimal.valueOf(35),
+                "hour",
+                "lab",
+                null,
+                List.of("updated-cover.jpg", "updated-detail.jpg"),
+                null,
+                null,
+                null,
+                null);
     }
 }

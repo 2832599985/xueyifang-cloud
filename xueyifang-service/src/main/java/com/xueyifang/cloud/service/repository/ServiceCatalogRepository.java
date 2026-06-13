@@ -9,7 +9,21 @@ public interface ServiceCatalogRepository {
 
     Optional<ServiceItem> findById(Long serviceId);
 
+    Long createService(ServiceCreateCommand command);
+
+    boolean updateService(Long serviceId, ServiceUpdateCommand command);
+
+    boolean updateServiceStatus(Long serviceId, int status, int reviewStatus);
+
+    boolean updateCoverImage(Long serviceId, String coverImage);
+
+    boolean deleteService(Long serviceId);
+
     List<ServiceImage> findImagesByServiceId(Long serviceId);
+
+    void insertImages(Long serviceId, List<String> imageUrls);
+
+    void replaceImages(Long serviceId, List<String> imageUrls);
 
     List<ServiceTag> findActiveTags();
 }

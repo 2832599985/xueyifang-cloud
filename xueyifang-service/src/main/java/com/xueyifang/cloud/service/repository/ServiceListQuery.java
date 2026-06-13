@@ -5,6 +5,7 @@ public record ServiceListQuery(
         Long tagId,
         Long categoryId,
         Long professionalId,
+        Long publisherId,
         Integer status,
         int offset,
         int limit) {

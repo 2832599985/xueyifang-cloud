@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务浏览最短链路已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情和标签读取。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场最短链路已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架和逻辑删除。
 
 ## 根目录索引
 
@@ -32,7 +32,7 @@
 | `docs/service-boundary-design.md` | 文档 | 服务拆分边界、暂缓服务、第一批迁移顺序和网关路由约定。 |
 | `docs/local-infrastructure.md` | 文档 | 本地 MySQL、Redis、Nacos 启动方式和应用接入说明。 |
 | `docs/auth-user-api-contract.md` | 文档 | 阶段 4 认证与用户资料接口契约，记录新旧兼容路径和 Token 约定。 |
-| `docs/service-market-api-contract.md` | 文档 | 阶段 5 服务市场只读链路接口契约，记录服务列表、详情和标签接口。 |
+| `docs/service-market-api-contract.md` | 文档 | 阶段 5 服务市场接口契约，记录服务浏览和发布者管理接口。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
@@ -55,7 +55,7 @@
 | `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前使用 Nacos 服务发现和 `lb://` 路由，并生成或透传 `X-Request-Id`，校验 Bearer Token、拒绝黑名单 Token 后透传可信用户上下文。 |
 | `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、Token 刷新、退出登录、Redis Token 黑名单，并按 `user.publish_permission` 签发权限声明。 |
 | `xueyifang-user` | 已创建 | 用户服务，当前包含当前用户、资料更新、改密、发布权限状态和旧 `/auth/*` 资料路径兼容接口。 |
-| `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、服务列表、服务详情和标签读取接口。 |
+| `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、服务列表、服务详情、标签读取、发布、我的服务、编辑、上下架和逻辑删除接口。 |
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类和基础端口配置。 |
 
 ## 关键文件索引
@@ -109,9 +109,11 @@
 | `xueyifang-user/src/main/resources/application.yml` | 用户服务端口、服务名、Nacos 和 MySQL 配置。 |
 | `xueyifang-service/pom.xml` | 服务市场 POM，依赖公共 Web、JDBC 和 MySQL。 |
 | `xueyifang-service/src/main/java/com/xueyifang/cloud/service/XueyifangServiceApplication.java` | 服务市场启动类。 |
-| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/controller/ServiceCatalogController.java` | 服务市场只读入口，提供 `/service/list`、`/service/{serviceId}` 和 `/service/tags`。 |
-| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/repository/JdbcServiceCatalogRepository.java` | 基于 `JdbcTemplate` 的 `service`、`service_image` 和 `service_tag` 查询实现。 |
-| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/service/ServiceCatalogService.java` | 服务列表、详情可见性和标签读取业务逻辑。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/controller/ServiceCatalogController.java` | 服务市场入口，提供服务浏览、标签读取和发布者管理接口。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/dto/ServicePublishRequest.java` | 服务发布请求，兼容新字段和旧前端 `serviceTitle`/`serviceDescription` 字段。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/dto/ServiceUpdateRequest.java` | 服务编辑请求，兼容图片替换和旧前端字段。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/repository/JdbcServiceCatalogRepository.java` | 基于 `JdbcTemplate` 的 `service`、`service_image` 和 `service_tag` 查询/写入实现。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/service/ServiceCatalogService.java` | 服务列表、详情可见性、标签读取、发布、编辑、上下架和删除业务逻辑。 |
 | `xueyifang-service/src/main/resources/application.yml` | 服务市场端口、服务名、Nacos 和 MySQL 配置。 |
 | `xueyifang-trade/pom.xml` | 交易服务 POM。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/XueyifangTradeApplication.java` | 交易服务启动类。 |
@@ -120,6 +122,6 @@
 ## Todo
 
 - 让交易服务在迁移业务接口时消费 `X-User-*` 用户上下文。
-- 继续迁移服务发布、编辑、上下架、收藏和评价展示/创建接口。
+- 继续迁移服务收藏和评价展示/创建接口，或进入订单最短链路。
 - 启动本地 Nacos 后，做一次网关到业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。

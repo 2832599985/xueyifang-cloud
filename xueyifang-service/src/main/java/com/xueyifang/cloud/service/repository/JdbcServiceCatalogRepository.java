@@ -1,10 +1,14 @@
 package com.xueyifang.cloud.service.repository;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +60,105 @@ public class JdbcServiceCatalogRepository implements ServiceCatalogRepository {
     }
 
     @Override
+    public Long createService(ServiceCreateCommand command) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement("""
+                            INSERT INTO `service`
+                                (publisher_id, title, description, tag_id, tag_name, category_id, category_name,
+                                 professional_id, professional_name, price, unit, location, status, review_status,
+                                 cover_image)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                    Statement.RETURN_GENERATED_KEYS);
+            statement.setLong(1, command.publisherId());
+            statement.setString(2, command.title());
+            statement.setString(3, command.description());
+            setNullableLong(statement, 4, command.tagId());
+            statement.setString(5, command.tagName());
+            setNullableLong(statement, 6, command.categoryId());
+            statement.setString(7, command.categoryName());
+            setNullableLong(statement, 8, command.professionalId());
+            statement.setString(9, command.professionalName());
+            statement.setBigDecimal(10, command.price());
+            statement.setString(11, command.unit());
+            statement.setString(12, command.location());
+            statement.setInt(13, command.status());
+            statement.setInt(14, command.reviewStatus());
+            statement.setString(15, command.coverImage());
+            return statement;
+        }, keyHolder);
+
+        Number key = keyHolder.getKey();
+        if (key == null) {
+            throw new IllegalStateException("service id was not generated");
+        }
+        return key.longValue();
+    }
+
+    @Override
+    public boolean updateService(Long serviceId, ServiceUpdateCommand command) {
+        if (!command.hasChanges()) {
+            return true;
+        }
+
+        List<String> assignments = new ArrayList<>();
+        List<Object> parameters = new ArrayList<>();
+        addAssignment(assignments, parameters, "title", command.title());
+        addAssignment(assignments, parameters, "description", command.description());
+        addAssignment(assignments, parameters, "tag_id", command.tagId());
+        addAssignment(assignments, parameters, "tag_name", command.tagName());
+        addAssignment(assignments, parameters, "category_id", command.categoryId());
+        addAssignment(assignments, parameters, "category_name", command.categoryName());
+        addAssignment(assignments, parameters, "professional_id", command.professionalId());
+        addAssignment(assignments, parameters, "professional_name", command.professionalName());
+        addAssignment(assignments, parameters, "price", command.price());
+        addAssignment(assignments, parameters, "unit", command.unit());
+        addAssignment(assignments, parameters, "location", command.location());
+        addAssignment(assignments, parameters, "cover_image", command.coverImage());
+
+        parameters.add(serviceId);
+        int updated = jdbcTemplate.update(
+                "UPDATE `service` SET " + String.join(", ", assignments)
+                        + " WHERE id = ? AND is_deleted = 0",
+                parameters.toArray());
+        return updated > 0;
+    }
+
+    @Override
+    public boolean updateServiceStatus(Long serviceId, int status, int reviewStatus) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET status = ?, review_status = ?
+                        WHERE id = ? AND is_deleted = 0
+                        """,
+                status,
+                reviewStatus,
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean updateCoverImage(Long serviceId, String coverImage) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET cover_image = ?
+                        WHERE id = ? AND is_deleted = 0
+                        """,
+                coverImage,
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean deleteService(Long serviceId) {
+        int updated = jdbcTemplate.update(
+                "UPDATE `service` SET is_deleted = 1 WHERE id = ? AND is_deleted = 0",
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
     public List<ServiceImage> findImagesByServiceId(Long serviceId) {
         return jdbcTemplate.query("""
                         SELECT id, service_id, image_url, sort_order, is_cover
@@ -70,6 +173,35 @@ public class JdbcServiceCatalogRepository implements ServiceCatalogRepository {
                         rs.getObject("sort_order", Integer.class),
                         rs.getBoolean("is_cover")),
                 serviceId);
+    }
+
+    @Override
+    public void insertImages(Long serviceId, List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < imageUrls.size(); i++) {
+            jdbcTemplate.update("""
+                            INSERT INTO service_image (service_id, image_url, sort_order, is_cover)
+                            VALUES (?, ?, ?, ?)
+                            """,
+                    serviceId,
+                    imageUrls.get(i),
+                    i,
+                    i == 0);
+        }
+    }
+
+    @Override
+    public void replaceImages(Long serviceId, List<String> imageUrls) {
+        jdbcTemplate.update("""
+                        UPDATE service_image
+                        SET is_deleted = 1
+                        WHERE service_id = ? AND is_deleted = 0
+                        """,
+                serviceId);
+        insertImages(serviceId, imageUrls);
     }
 
     @Override
@@ -111,8 +243,27 @@ public class JdbcServiceCatalogRepository implements ServiceCatalogRepository {
             where.append(" AND professional_id = ?");
             parameters.add(query.professionalId());
         }
+        if (query.publisherId() != null) {
+            where.append(" AND publisher_id = ?");
+            parameters.add(query.publisherId());
+        }
 
         return where.toString();
+    }
+
+    private void addAssignment(List<String> assignments, List<Object> parameters, String column, Object value) {
+        if (value != null) {
+            assignments.add(column + " = ?");
+            parameters.add(value);
+        }
+    }
+
+    private void setNullableLong(PreparedStatement statement, int parameterIndex, Long value) throws SQLException {
+        if (value == null) {
+            statement.setObject(parameterIndex, null);
+            return;
+        }
+        statement.setLong(parameterIndex, value);
     }
 
     private ServiceItem mapService(ResultSet rs) throws SQLException {
