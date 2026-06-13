@@ -2,7 +2,7 @@
 
 ## 目标
 
-本地开发先使用 Docker Compose 启动 MySQL、Redis 和 Nacos。应用默认连接 `127.0.0.1:8848` 的 Nacos，并使用可选配置导入；没有启动 Nacos 时，构建不受影响。
+本地开发先使用 Docker Compose 启动 MySQL、Redis 和 Nacos。应用默认连接 `127.0.0.1:8848` 的 Nacos，并使用可选配置导入；没有启动 Nacos 时，Maven 构建不受影响。运行服务注册、发现和网关 `lb://` 路由时仍需要启动 Nacos。
 
 ## 组件
 
@@ -45,5 +45,4 @@ http://localhost:8848/nacos
 optional:nacos:${spring.application.name}.yml?group=${NACOS_GROUP:DEFAULT_GROUP}
 ```
 
-`optional` 是刻意保留的。这样新服务还没完成配置中心治理时，也能使用本地 `application.yml` 启动。
-
+`optional` 是刻意保留的。这样新服务还没完成配置中心治理时，缺少远端配置不会阻断本地 `application.yml` 加载；完整运行微服务链路时仍应先启动 Nacos。

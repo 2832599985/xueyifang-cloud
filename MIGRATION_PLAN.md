@@ -15,9 +15,10 @@
 | 仓库检查 | 已完成 | 根目录原本仅有 `AIREADME.md`，尚未初始化 Git。 |
 | 计划文档 | 已完成 | 已建立本迁移计划，后续按阶段更新进度。 |
 | 项目记忆 | 已完成 | 已创建 `PROJECT_MEMORY.md`，作为代码索引和 Todo 记录。 |
-| Spring Cloud 骨架 | 已完成 | 已写入 Maven 父工程、公共模块、网关和三个服务模块。 |
+| Spring Cloud 骨架 | 已完成 | 已写入 Maven 父工程、公共模块、网关和四个业务服务模块。 |
 | Git 初始化 | 已完成 | 已创建本地 Git 仓库，并加入基础忽略和换行规则。 |
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
+| 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
 
 ## 阶段计划
 
@@ -97,7 +98,7 @@
 
 - [x] 接入 Nacos 或 Spring Cloud Config 的配置方案，优先按项目实际部署环境定。
 - [x] 配置 Gateway 路由。
-- [ ] 配置统一异常、统一响应、基础日志。
+- [x] 配置统一异常、统一响应、基础日志。
 - [x] 准备本地 Docker Compose，覆盖数据库、Redis、Nacos 等基础依赖。
 - [ ] 增加基础 CI。
 
@@ -160,6 +161,8 @@
 | 2026-06-14 | 阶段 3 | 已完成 | 增加 Docker Compose 本地基础设施，覆盖 MySQL、Redis 和 Nacos。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 接入 Spring Cloud Alibaba Nacos Discovery 和 Config，并将网关路由改为 `lb://` 服务名。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过；执行 `docker compose config --quiet` 通过。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 在 `common-core` 迁移 `BaseResponse`、`ErrorCode`、`ResultUtils`、`BusinessException`、用户上下文和链路常量；在 `common-web` 自动装配 Servlet 全局异常处理和 requestId 过滤器；在 Gateway 生成或透传 `X-Request-Id`。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 补充通用响应、异常映射、Servlet requestId、Gateway requestId 测试；使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
 
 ## 待确认事项
 

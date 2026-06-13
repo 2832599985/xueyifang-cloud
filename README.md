@@ -2,7 +2,7 @@
 
 `xueyifang-cloud` 是对原 `xueyifang` 单体项目的 Spring Cloud 重构工程。
 
-当前仓库处于初始化阶段。迁移会按 [MIGRATION_PLAN.md](MIGRATION_PLAN.md) 分阶段推进，每完成一段就更新计划进度和 [PROJECT_MEMORY.md](PROJECT_MEMORY.md)。
+当前仓库处于 Spring Cloud 基础设施落地阶段。迁移会按 [MIGRATION_PLAN.md](MIGRATION_PLAN.md) 分阶段推进，每完成一段就更新计划进度和 [PROJECT_MEMORY.md](PROJECT_MEMORY.md)。
 
 ## 技术基线
 
@@ -23,6 +23,14 @@
 | `xueyifang-user` | 用户服务。 |
 | `xueyifang-service` | 服务市场，承载服务发布、浏览、收藏和评价展示。 |
 | `xueyifang-trade` | 交易服务，承载订单、钱包流水、退款和纠纷。 |
+
+## 已落地基础能力
+
+- Nacos Discovery 和 Config 接入，网关路由使用 `lb://` 服务名。
+- 本地 Docker Compose 覆盖 MySQL、Redis 和 Nacos。
+- `xueyifang-common-core` 提供 `BaseResponse`、`ErrorCode`、`ResultUtils`、`BusinessException`、用户上下文和链路常量。
+- `xueyifang-common-web` 为 Servlet 服务自动装配统一异常处理和 `X-Request-Id` 日志上下文。
+- Gateway 入口生成或透传 `X-Request-Id`，并写回响应头。
 
 ## 本地构建
 
