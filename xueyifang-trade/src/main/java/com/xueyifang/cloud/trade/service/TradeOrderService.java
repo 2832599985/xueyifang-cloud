@@ -8,6 +8,8 @@ import com.xueyifang.cloud.trade.dto.OrderCreateRequest;
 import com.xueyifang.cloud.trade.dto.OrderDetailResponse;
 import com.xueyifang.cloud.trade.dto.OrderListResponse;
 import com.xueyifang.cloud.trade.dto.OrderPayRequest;
+import com.xueyifang.cloud.trade.dto.OrderRefundRequest;
+import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
 import com.xueyifang.cloud.trade.repository.OrderCreateCommand;
 import com.xueyifang.cloud.trade.repository.OrderListQuery;
 import com.xueyifang.cloud.trade.repository.OrderLogCommand;
@@ -45,6 +47,8 @@ public class TradeOrderService {
 
     private static final int PAYMENT_PAID = 2;
 
+    private static final int PAYMENT_REFUNDED = 3;
+
     private static final int PAYMENT_METHOD_WALLET = 1;
 
     private static final int TRADE_TYPE_OFFLINE = 1;
@@ -55,7 +59,13 @@ public class TradeOrderService {
 
     private static final int REFUND_PENDING = 1;
 
+    private static final int REFUND_REJECTED = 3;
+
+    private static final int REFUND_COMPLETED = 4;
+
     private static final int TRANSACTION_PAYMENT = 3;
+
+    private static final int TRANSACTION_REFUND = 4;
 
     private static final int TRANSACTION_INCOME = 5;
 
@@ -66,6 +76,8 @@ public class TradeOrderService {
     private static final int OPERATOR_ROLE_BUYER = 1;
 
     private static final int OPERATOR_ROLE_SELLER = 2;
+
+    private static final int OPERATOR_ROLE_ADMIN = 3;
 
     private static final int ADMIN_ROLE = 2;
 
@@ -264,6 +276,84 @@ public class TradeOrderService {
                 "BUYER_CONFIRM", "买家确认收货，交易完成，资金已结算给卖家");
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public void requestRefund(Long orderId, OrderRefundRequest request) {
+        LoginUserContext user = requireCurrentUser();
+        String reason = requireText(request == null ? null : request.reason(), "reason");
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!user.userId().equals(order.buyerId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only the buyer can request a refund");
+        }
+        if (!Integer.valueOf(ORDER_PENDING_SHIP).equals(order.orderStatus())
+                && !Integer.valueOf(ORDER_PENDING_RECEIPT).equals(order.orderStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order status does not support refund");
+        }
+        if (Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "refund request is already pending");
+        }
+        if (Integer.valueOf(REFUND_COMPLETED).equals(order.refundStatus())
+                || Integer.valueOf(PAYMENT_REFUNDED).equals(order.paymentStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has already been refunded");
+        }
+
+        if (Integer.valueOf(ORDER_PENDING_SHIP).equals(order.orderStatus())) {
+            processRefund(order, reason, user.userId(), OPERATOR_ROLE_BUYER,
+                    "REFUND", "买家在发货前申请退款，系统自动退款");
+            return;
+        }
+
+        if (!tradeOrderRepository.requestRefund(order.id(), reason, LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "refund request status changed");
+        }
+        recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_BUYER,
+                "REFUND_REQUEST", "买家申请退款：" + reason);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void sellerHandleRefund(Long orderId, SellerHandleRefundRequest request) {
+        LoginUserContext user = requireCurrentUser();
+        if (request == null || request.approve() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "approve is required");
+        }
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!user.userId().equals(order.sellerId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only the seller can handle the refund request");
+        }
+        if (!Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "there is no pending refund request");
+        }
+
+        if (Boolean.TRUE.equals(request.approve())) {
+            String reason = normalizeOptional(order.refundReason());
+            processRefund(order, reason == null ? "卖家同意退款" : reason, user.userId(), OPERATOR_ROLE_SELLER,
+                    "SELLER_APPROVE_REFUND", "卖家同意退款");
+            return;
+        }
+
+        String rejectReason = requireText(request.rejectReason(), "rejectReason");
+        if (!tradeOrderRepository.rejectRefund(order.id())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "refund status changed");
+        }
+        recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_SELLER,
+                "SELLER_REJECT_REFUND", "卖家拒绝退款：" + rejectReason);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void adminRefundOrder(Long orderId, String reason) {
+        LoginUserContext user = requireCurrentUser();
+        if (!isAdmin(user)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only admin can refund this order");
+        }
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!Integer.valueOf(ORDER_PENDING_SHIP).equals(order.orderStatus())
+                && !Integer.valueOf(ORDER_PENDING_RECEIPT).equals(order.orderStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order status does not support refund");
+        }
+        String normalizedReason = requireText(reason, "reason");
+        processRefund(order, normalizedReason, user.userId(), OPERATOR_ROLE_ADMIN,
+                "ADMIN_REFUND", "管理员强制退款：" + normalizedReason);
+    }
+
     public OrderListResponse listMyOrders(Integer pageNum, Integer pageSize, Integer orderStatus) {
         LoginUserContext user = requireCurrentUser();
         int normalizedPageNum = normalizePageNum(pageNum);
@@ -313,6 +403,41 @@ public class TradeOrderService {
         Long secondId = buyerId < sellerId ? sellerId : buyerId;
         return tradeOrderRepository.findUserForUpdate(secondId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_EXIST));
+    }
+
+    private void processRefund(TradeOrder order, String reason, Long operatorId,
+                               Integer operatorRole, String actionType, String logMessage) {
+        BigDecimal refundAmount = order.frozenAmount();
+        if (refundAmount == null || refundAmount.signum() <= 0) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has no refundable frozen amount");
+        }
+
+        TradeUserWallet buyer = tradeOrderRepository.findUserForUpdate(order.buyerId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_EXIST));
+        BigDecimal balanceBefore = zeroIfNull(buyer.walletBalance());
+        BigDecimal frozenBefore = zeroIfNull(buyer.frozenAmount());
+        if (frozenBefore.compareTo(refundAmount) < 0) {
+            throw new BusinessException(ErrorCode.WALLET_FROZEN_NOT_ENOUGH);
+        }
+
+        BigDecimal frozenAfter = frozenBefore.subtract(refundAmount);
+        BigDecimal balanceAfter = balanceBefore.add(refundAmount);
+        if (!tradeOrderRepository.updateUserWallet(buyer.userId(), balanceAfter, frozenAfter)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "buyer wallet update failed");
+        }
+
+        recordWalletTransaction(buyer.userId(), TRANSACTION_UNFREEZE, refundAmount,
+                balanceBefore, balanceBefore, frozenBefore, frozenAfter,
+                order.id(), "退款解冻订单资金 " + order.orderNumber());
+        recordWalletTransaction(buyer.userId(), TRANSACTION_REFUND, refundAmount,
+                balanceBefore, balanceAfter, frozenAfter, frozenAfter,
+                order.id(), "订单退款 " + order.orderNumber());
+
+        if (!tradeOrderRepository.markOrderRefunded(order.id(), reason, LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order refund status changed");
+        }
+        recordLog(order.id(), order.orderStatus(), ORDER_FAILED, operatorId, operatorRole,
+                actionType, logMessage);
     }
 
     private void recordLog(Long orderId, Integer oldStatus, Integer newStatus, Long operatorId,
@@ -405,6 +530,18 @@ public class TradeOrderService {
             return orderStatus;
         }
         throw new BusinessException(ErrorCode.PARAMS_ERROR, "orderStatus is invalid");
+    }
+
+    private BigDecimal zeroIfNull(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private String requireText(String value, String name) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, name + " must not be blank");
+        }
+        return normalized;
     }
 
     private int normalizePageNum(Integer pageNum) {

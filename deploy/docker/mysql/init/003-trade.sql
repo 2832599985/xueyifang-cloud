@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `service_order` (
     KEY `idx_service_order_seller` (`seller_id`, `create_time`),
     KEY `idx_service_order_service` (`service_id`),
     KEY `idx_service_order_status` (`order_status`, `payment_status`),
+    KEY `idx_service_order_refund` (`refund_status`, `refund_request_time`),
     CONSTRAINT `fk_service_order_service` FOREIGN KEY (`service_id`) REFERENCES `service` (`id`),
     CONSTRAINT `fk_service_order_buyer` FOREIGN KEY (`buyer_id`) REFERENCES `user` (`id`),
     CONSTRAINT `fk_service_order_seller` FOREIGN KEY (`seller_id`) REFERENCES `user` (`id`)

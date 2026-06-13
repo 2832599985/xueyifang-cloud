@@ -8,6 +8,8 @@ import com.xueyifang.cloud.trade.dto.OrderCreateRequest;
 import com.xueyifang.cloud.trade.dto.OrderDetailResponse;
 import com.xueyifang.cloud.trade.dto.OrderListResponse;
 import com.xueyifang.cloud.trade.dto.OrderPayRequest;
+import com.xueyifang.cloud.trade.dto.OrderRefundRequest;
+import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
 import com.xueyifang.cloud.trade.repository.TradeOrder;
 import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
@@ -181,6 +183,69 @@ class TradeOrderServiceTest {
         loginAsBuyer();
         tradeOrderService.cancelOrder(orderId);
         assertThat(repository.getOrder(orderId).orderStatus()).isEqualTo(5);
+    }
+
+    @Test
+    void directlyRefundsPaidOrderBeforeShipment() {
+        loginAsBuyer();
+        Long orderId = tradeOrderService.createOrder(new OrderCreateRequest(1L, 2, 2, null, null));
+        tradeOrderService.payOrder(orderId, new OrderPayRequest(null, 1));
+
+        tradeOrderService.requestRefund(orderId, new OrderRefundRequest("seller has not shipped", null));
+
+        TradeOrder order = repository.getOrder(orderId);
+        assertThat(order.orderStatus()).isEqualTo(6);
+        assertThat(order.paymentStatus()).isEqualTo(3);
+        assertThat(order.refundStatus()).isEqualTo(4);
+        assertThat(order.frozenAmount()).isEqualByComparingTo("0.00");
+        assertThat(repository.getUser(20L).walletBalance()).isEqualByComparingTo("100.00");
+        assertThat(repository.getUser(20L).frozenAmount()).isEqualByComparingTo("0.00");
+        assertThat(repository.transactions()).extracting("transactionType").containsExactly(3, 6, 7, 4);
+        assertThat(repository.logs()).extracting("actionType").containsExactly("CREATE", "PAY", "REFUND");
+
+        assertThatThrownBy(() -> tradeOrderService.requestRefund(orderId, new OrderRefundRequest("again", null)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.ORDER_STATUS_ERROR.getCode()));
+    }
+
+    @Test
+    void requestsAndSellerHandlesRefundAfterShipment() {
+        loginAsBuyer();
+        Long orderId = tradeOrderService.createOrder(new OrderCreateRequest(1L, 1, 2, null, null));
+        tradeOrderService.payOrder(orderId, new OrderPayRequest(null, 1));
+
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+        tradeOrderService.shipOrder(orderId);
+
+        loginAsBuyer();
+        tradeOrderService.requestRefund(orderId, new OrderRefundRequest("not as described", null));
+
+        TradeOrder pendingRefund = repository.getOrder(orderId);
+        assertThat(pendingRefund.orderStatus()).isEqualTo(3);
+        assertThat(pendingRefund.refundStatus()).isEqualTo(1);
+        assertThatThrownBy(() -> tradeOrderService.confirmOrder(orderId))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.OPERATION_ERROR.getCode()));
+
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+        tradeOrderService.sellerHandleRefund(orderId, new SellerHandleRefundRequest(false, "will fix it"));
+        assertThat(repository.getOrder(orderId).refundStatus()).isEqualTo(3);
+
+        loginAsBuyer();
+        tradeOrderService.requestRefund(orderId, new OrderRefundRequest("still not fixed", null));
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+        tradeOrderService.sellerHandleRefund(orderId, new SellerHandleRefundRequest(true, null));
+
+        TradeOrder refunded = repository.getOrder(orderId);
+        assertThat(refunded.orderStatus()).isEqualTo(6);
+        assertThat(refunded.paymentStatus()).isEqualTo(3);
+        assertThat(refunded.refundStatus()).isEqualTo(4);
+        assertThat(repository.getUser(20L).walletBalance()).isEqualByComparingTo("100.00");
+        assertThat(repository.getUser(20L).frozenAmount()).isEqualByComparingTo("0.00");
+        assertThat(repository.transactions()).extracting("transactionType").containsExactly(3, 6, 7, 4);
+        assertThat(repository.logs()).extracting("actionType")
+                .containsExactly("CREATE", "PAY", "SELLER_SHIP", "REFUND_REQUEST",
+                        "SELLER_REJECT_REFUND", "REFUND_REQUEST", "SELLER_APPROVE_REFUND");
     }
 
     @Test

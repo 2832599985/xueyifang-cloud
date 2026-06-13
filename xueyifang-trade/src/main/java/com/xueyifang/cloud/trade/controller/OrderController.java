@@ -6,6 +6,8 @@ import com.xueyifang.cloud.trade.dto.OrderCreateRequest;
 import com.xueyifang.cloud.trade.dto.OrderDetailResponse;
 import com.xueyifang.cloud.trade.dto.OrderListResponse;
 import com.xueyifang.cloud.trade.dto.OrderPayRequest;
+import com.xueyifang.cloud.trade.dto.OrderRefundRequest;
+import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
 import com.xueyifang.cloud.trade.service.TradeOrderService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,6 +55,20 @@ public class OrderController {
     @PostMapping("/{orderId}/confirm")
     public BaseResponse<Void> confirmOrder(@PathVariable Long orderId) {
         tradeOrderService.confirmOrder(orderId);
+        return ResultUtils.success();
+    }
+
+    @PostMapping("/{orderId}/refund")
+    public BaseResponse<Void> requestRefund(@PathVariable Long orderId,
+                                            @Valid @RequestBody OrderRefundRequest request) {
+        tradeOrderService.requestRefund(orderId, request);
+        return ResultUtils.success();
+    }
+
+    @PostMapping("/{orderId}/handleRefund")
+    public BaseResponse<Void> sellerHandleRefund(@PathVariable Long orderId,
+                                                 @Valid @RequestBody SellerHandleRefundRequest request) {
+        tradeOrderService.sellerHandleRefund(orderId, request);
         return ResultUtils.success();
     }
 

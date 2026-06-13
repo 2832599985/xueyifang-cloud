@@ -20,7 +20,7 @@
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
 | 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口。 |
-| 阶段 5 服务市场与交易最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动链路；`xueyifang-trade` 已接入订单创建、支付、取消、发货、确认完成和买卖家订单查询。 |
+| 阶段 5 服务市场与交易最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动链路；`xueyifang-trade` 已接入订单创建、支付、取消、发货、确认完成、退款、钱包和买卖家订单查询。 |
 
 ## 阶段计划
 
@@ -163,6 +163,8 @@
 - [x] 新增 `POST /order/create`、`POST /order/{orderId}/pay`、`POST /order/{orderId}/cancel`、`POST /order/{orderId}/ship`、`POST /order/{orderId}/confirm`、`GET /order/myOrders`、`GET /order/mySellingOrders` 和 `GET /order/{orderId}`。
 - [x] 订单支付按钱包余额扣减和冻结金额流转；买家确认完成后结算给卖家，并记录钱包流水和订单日志。
 - [x] 回接 `POST /review/create`，按订单买家、已完成状态和订单唯一评价校验后写入评价并刷新服务评分。
+- [x] 新增 `POST /order/{orderId}/refund` 和 `POST /order/{orderId}/handleRefund`，支持待发货直接退款、待收货退款申请、卖家同意退款和卖家拒绝退款。
+- [x] 新增 `GET /wallet/balance`、`GET /wallet/transactions`、`POST /wallet/recharge` 和 `POST /wallet/withdraw`，接入钱包余额、冻结金额和钱包流水分页查询。
 
 验收标准：
 
@@ -201,10 +203,11 @@
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补收藏、我的收藏、评价公开列表和订单评价状态接口，并补充互动表初始化脚本和单测。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-trade` 补订单最短链路，新增下单、支付、取消、发货、确认完成、买卖家列表和详情接口，并补充交易表初始化脚本和资金流单测。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 回接 `xueyifang-service` 评价创建接口，基于已完成订单校验买家归属、唯一评价并刷新服务评分。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-trade` 补退款和钱包基础链路，新增买家退款申请、卖家处理退款、钱包余额、钱包流水、充值和提现接口，并补充资金流单测。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
-- 第一批迁移已采用“认证、用户、服务列表、订单最短链路”的顺序；后续优先补退款、纠纷、钱包查询和系统字典。
+- 第一批迁移已采用“认证、用户、服务列表、订单最短链路”的顺序；后续优先补纠纷、订单定时任务和系统字典。
 - 消息、系统、文件三个候选服务何时拆出，建议在主交易链路跑通后再决定。
 - Nacos 生产环境鉴权和外置数据库方案。

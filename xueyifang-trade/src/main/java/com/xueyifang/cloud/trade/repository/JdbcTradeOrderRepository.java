@@ -214,6 +214,59 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
     }
 
     @Override
+    public boolean requestRefund(Long orderId, String reason, LocalDateTime refundRequestTime) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE service_order
+                        SET refund_status = 1,
+                            refund_reason = ?,
+                            refund_request_time = ?
+                        WHERE id = ?
+                          AND order_status = 3
+                          AND payment_status = 2
+                          AND COALESCE(refund_status, 0) IN (0, 3)
+                          AND is_deleted = 0
+                        """,
+                reason,
+                refundRequestTime,
+                orderId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean rejectRefund(Long orderId) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE service_order
+                        SET refund_status = 3
+                        WHERE id = ? AND refund_status = 1 AND is_deleted = 0
+                        """,
+                orderId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean markOrderRefunded(Long orderId, String reason, LocalDateTime refundTime) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE service_order
+                        SET payment_status = 3,
+                            order_status = 6,
+                            frozen_amount = 0,
+                            refund_status = 4,
+                            refund_reason = ?,
+                            refund_request_time = COALESCE(refund_request_time, ?)
+                        WHERE id = ?
+                          AND order_status IN (2, 3)
+                          AND payment_status = 2
+                          AND frozen_amount > 0
+                          AND COALESCE(refund_status, 0) <> 4
+                          AND is_deleted = 0
+                        """,
+                reason,
+                refundTime,
+                orderId);
+        return updated > 0;
+    }
+
+    @Override
     public boolean incrementServiceOrderCount(Long serviceId, Integer quantity) {
         int updated = jdbcTemplate.update("""
                         UPDATE `service`
@@ -223,6 +276,33 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
                 quantity,
                 serviceId);
         return updated > 0;
+    }
+
+    @Override
+    public WalletTransactionPage findWalletTransactions(WalletTransactionQuery query) {
+        List<Object> parameters = new ArrayList<>();
+        String whereClause = buildWalletTransactionWhere(query, parameters);
+
+        Long total = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM wallet_transaction wt " + whereClause,
+                Long.class,
+                parameters.toArray());
+
+        List<Object> listParameters = new ArrayList<>(parameters);
+        listParameters.add(query.limit());
+        listParameters.add(query.offset());
+        List<WalletTransactionItem> records = jdbcTemplate.query("""
+                        SELECT wt.id AS transaction_id, wt.user_id, wt.transaction_type, wt.amount,
+                               wt.balance_before, wt.balance_after, wt.frozen_before, wt.frozen_after,
+                               wt.related_order_id, o.order_number AS related_order_number,
+                               wt.transaction_no, wt.remark, wt.create_time
+                        FROM wallet_transaction wt
+                        LEFT JOIN service_order o ON o.id = wt.related_order_id AND o.is_deleted = 0
+                        """ + whereClause + " ORDER BY wt.create_time DESC, wt.id DESC LIMIT ? OFFSET ?",
+                (rs, rowNum) -> mapWalletTransaction(rs),
+                listParameters.toArray());
+
+        return new WalletTransactionPage(records, total != null ? total : 0L);
     }
 
     @Override
@@ -293,6 +373,24 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
         return where.toString();
     }
 
+    private String buildWalletTransactionWhere(WalletTransactionQuery query, List<Object> parameters) {
+        StringBuilder where = new StringBuilder("WHERE wt.user_id = ?");
+        parameters.add(query.userId());
+        if (query.transactionType() != null) {
+            where.append(" AND wt.transaction_type = ?");
+            parameters.add(query.transactionType());
+        }
+        if (query.startTime() != null) {
+            where.append(" AND wt.create_time >= ?");
+            parameters.add(query.startTime());
+        }
+        if (query.endTime() != null) {
+            where.append(" AND wt.create_time <= ?");
+            parameters.add(query.endTime());
+        }
+        return where.toString();
+    }
+
     private void setNullableLong(PreparedStatement statement, int parameterIndex, Long value) throws SQLException {
         if (value == null) {
             statement.setObject(parameterIndex, null);
@@ -355,5 +453,22 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
                 rs.getString("seller_name"),
                 rs.getString("seller_avatar"),
                 rs.getBoolean("is_reviewed"));
+    }
+
+    private WalletTransactionItem mapWalletTransaction(ResultSet rs) throws SQLException {
+        return new WalletTransactionItem(
+                rs.getLong("transaction_id"),
+                rs.getObject("user_id", Long.class),
+                rs.getObject("transaction_type", Integer.class),
+                rs.getBigDecimal("amount"),
+                rs.getBigDecimal("balance_before"),
+                rs.getBigDecimal("balance_after"),
+                rs.getBigDecimal("frozen_before"),
+                rs.getBigDecimal("frozen_after"),
+                rs.getObject("related_order_id", Long.class),
+                rs.getString("related_order_number"),
+                rs.getString("transaction_no"),
+                rs.getString("remark"),
+                rs.getObject("create_time", LocalDateTime.class));
     }
 }

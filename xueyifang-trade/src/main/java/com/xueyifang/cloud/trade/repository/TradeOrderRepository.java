@@ -30,7 +30,15 @@ public interface TradeOrderRepository {
 
     boolean completeOrder(Long orderId, LocalDateTime buyerConfirmTime);
 
+    boolean requestRefund(Long orderId, String reason, LocalDateTime refundRequestTime);
+
+    boolean rejectRefund(Long orderId);
+
+    boolean markOrderRefunded(Long orderId, String reason, LocalDateTime refundTime);
+
     boolean incrementServiceOrderCount(Long serviceId, Integer quantity);
+
+    WalletTransactionPage findWalletTransactions(WalletTransactionQuery query);
 
     void insertOrderLog(OrderLogCommand command);
 

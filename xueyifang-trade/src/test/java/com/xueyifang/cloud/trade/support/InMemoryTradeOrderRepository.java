@@ -9,6 +9,9 @@ import com.xueyifang.cloud.trade.repository.TradeOrderRepository;
 import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
 import com.xueyifang.cloud.trade.repository.WalletTransactionCommand;
+import com.xueyifang.cloud.trade.repository.WalletTransactionItem;
+import com.xueyifang.cloud.trade.repository.WalletTransactionPage;
+import com.xueyifang.cloud.trade.repository.WalletTransactionQuery;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -188,7 +191,8 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
     @Override
     public boolean shipOrder(Long orderId, LocalDateTime sellerShipTime) {
         TradeOrder order = orders.get(orderId);
-        if (order == null || !Integer.valueOf(2).equals(order.orderStatus())) {
+        if (order == null || !Integer.valueOf(2).equals(order.orderStatus())
+                || Integer.valueOf(1).equals(order.refundStatus())) {
             return false;
         }
         orders.put(orderId, copy(order, 3, order.paymentStatus(), order.frozenAmount(), order.paymentMethod(),
@@ -199,11 +203,54 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
     @Override
     public boolean completeOrder(Long orderId, LocalDateTime buyerConfirmTime) {
         TradeOrder order = orders.get(orderId);
-        if (order == null || !Integer.valueOf(3).equals(order.orderStatus())) {
+        if (order == null || !Integer.valueOf(3).equals(order.orderStatus())
+                || Integer.valueOf(1).equals(order.refundStatus())) {
             return false;
         }
         orders.put(orderId, copy(order, 4, order.paymentStatus(), BigDecimal.ZERO, order.paymentMethod(),
-                order.paymentTime(), order.sellerShipTime(), buyerConfirmTime));
+                order.paymentTime(), order.sellerShipTime(), buyerConfirmTime, 0,
+                order.refundReason(), order.refundRequestTime()));
+        return true;
+    }
+
+    @Override
+    public boolean requestRefund(Long orderId, String reason, LocalDateTime refundRequestTime) {
+        TradeOrder order = orders.get(orderId);
+        if (order == null || !Integer.valueOf(3).equals(order.orderStatus())
+                || !Integer.valueOf(2).equals(order.paymentStatus())
+                || !(Integer.valueOf(0).equals(order.refundStatus()) || Integer.valueOf(3).equals(order.refundStatus()))) {
+            return false;
+        }
+        orders.put(orderId, copy(order, order.orderStatus(), order.paymentStatus(), order.frozenAmount(),
+                order.paymentMethod(), order.paymentTime(), order.sellerShipTime(), order.buyerConfirmTime(),
+                1, reason, refundRequestTime));
+        return true;
+    }
+
+    @Override
+    public boolean rejectRefund(Long orderId) {
+        TradeOrder order = orders.get(orderId);
+        if (order == null || !Integer.valueOf(1).equals(order.refundStatus())) {
+            return false;
+        }
+        orders.put(orderId, copy(order, order.orderStatus(), order.paymentStatus(), order.frozenAmount(),
+                order.paymentMethod(), order.paymentTime(), order.sellerShipTime(), order.buyerConfirmTime(),
+                3, order.refundReason(), order.refundRequestTime()));
+        return true;
+    }
+
+    @Override
+    public boolean markOrderRefunded(Long orderId, String reason, LocalDateTime refundTime) {
+        TradeOrder order = orders.get(orderId);
+        if (order == null || !Integer.valueOf(2).equals(order.paymentStatus())
+                || !(Integer.valueOf(2).equals(order.orderStatus()) || Integer.valueOf(3).equals(order.orderStatus()))
+                || order.frozenAmount().signum() <= 0
+                || Integer.valueOf(4).equals(order.refundStatus())) {
+            return false;
+        }
+        orders.put(orderId, copy(order, 6, 3, BigDecimal.ZERO, order.paymentMethod(),
+                order.paymentTime(), order.sellerShipTime(), order.buyerConfirmTime(), 4,
+                reason, order.refundRequestTime() == null ? refundTime : order.refundRequestTime()));
         return true;
     }
 
@@ -214,6 +261,44 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
         }
         serviceOrderCounts.compute(serviceId, (id, count) -> (count == null ? 0 : count) + quantity);
         return true;
+    }
+
+    @Override
+    public WalletTransactionPage findWalletTransactions(WalletTransactionQuery query) {
+        List<WalletTransactionItem> items = new ArrayList<>();
+        LocalDateTime baseTime = LocalDateTime.parse("2026-06-14T02:00:00");
+        for (int i = 0; i < transactions.size(); i++) {
+            WalletTransactionCommand transaction = transactions.get(i);
+            LocalDateTime createTime = baseTime.plusSeconds(i + 1L);
+            TradeOrder order = transaction.relatedOrderId() == null ? null : orders.get(transaction.relatedOrderId());
+            items.add(new WalletTransactionItem(
+                    (long) i + 1,
+                    transaction.userId(),
+                    transaction.transactionType(),
+                    transaction.amount(),
+                    transaction.balanceBefore(),
+                    transaction.balanceAfter(),
+                    transaction.frozenBefore(),
+                    transaction.frozenAfter(),
+                    transaction.relatedOrderId(),
+                    order == null ? null : order.orderNumber(),
+                    transaction.transactionNo(),
+                    transaction.remark(),
+                    createTime));
+        }
+
+        List<WalletTransactionItem> matched = items.stream()
+                .filter(item -> query.userId().equals(item.userId()))
+                .filter(item -> query.transactionType() == null || query.transactionType().equals(item.transactionType()))
+                .filter(item -> query.startTime() == null || !item.createTime().isBefore(query.startTime()))
+                .filter(item -> query.endTime() == null || !item.createTime().isAfter(query.endTime()))
+                .sorted(Comparator.comparing(WalletTransactionItem::createTime).reversed())
+                .toList();
+        List<WalletTransactionItem> records = matched.stream()
+                .skip(query.offset())
+                .limit(query.limit())
+                .toList();
+        return new WalletTransactionPage(records, matched.size());
     }
 
     @Override
@@ -229,6 +314,15 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
     private TradeOrder copy(TradeOrder order, Integer orderStatus, Integer paymentStatus,
                             BigDecimal frozenAmount, Integer paymentMethod, LocalDateTime paymentTime,
                             LocalDateTime sellerShipTime, LocalDateTime buyerConfirmTime) {
+        return copy(order, orderStatus, paymentStatus, frozenAmount, paymentMethod, paymentTime,
+                sellerShipTime, buyerConfirmTime, order.refundStatus(), order.refundReason(),
+                order.refundRequestTime());
+    }
+
+    private TradeOrder copy(TradeOrder order, Integer orderStatus, Integer paymentStatus,
+                            BigDecimal frozenAmount, Integer paymentMethod, LocalDateTime paymentTime,
+                            LocalDateTime sellerShipTime, LocalDateTime buyerConfirmTime,
+                            Integer refundStatus, String refundReason, LocalDateTime refundRequestTime) {
         return new TradeOrder(
                 order.id(),
                 order.orderNumber(),
@@ -247,9 +341,9 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
                 paymentTime,
                 sellerShipTime,
                 buyerConfirmTime,
-                order.refundStatus(),
-                order.refundReason(),
-                order.refundRequestTime(),
+                refundStatus,
+                refundReason,
+                refundRequestTime,
                 order.remark(),
                 order.createTime(),
                 LocalDateTime.parse("2026-06-14T01:00:00"),
