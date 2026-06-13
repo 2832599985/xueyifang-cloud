@@ -1,0 +1,73 @@
+# PROJECT_MEMORY
+
+## 记忆规约
+
+- 本文件只记录项目索引、路径、功能短评和 Todo。
+- 不写具体业务代码。
+- 每次新增、删除或修改代码后，同步更新本文件。
+- 每完成一个模块、阶段或明确任务，完成必要校验后创建 Git 提交，并写清提交说明。
+
+## 项目概况
+
+- 项目名称：`xueyifang-cloud`
+- 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
+- 原后端项目：`2832599985/xueyifang-backend`
+- 原前端项目：`2832599985/xueyifang-frontend`
+- 当前状态：阶段 0 初始化已完成；已建立迁移计划、项目记忆、Git 仓库和可构建的 Spring Cloud 多模块骨架。
+
+## 根目录索引
+
+| 路径 | 类型 | 功能短评 |
+| --- | --- | --- |
+| `AIREADME.md` | 文档 | 用户提供的协作约定；禁止修改。 |
+| `.gitattributes` | 配置 | 统一文本文件换行策略，降低 Windows 和类 Unix 环境差异。 |
+| `.gitignore` | 配置 | 忽略 Maven 构建产物、日志、本地环境文件和 IDE 文件。 |
+| `README.md` | 文档 | 项目简介、技术基线、模块说明和本地构建命令。 |
+| `MIGRATION_PLAN.md` | 文档 | 迁移阶段、拆分策略、进度日志。 |
+| `PROJECT_MEMORY.md` | 文档 | 项目索引、功能短评和 Todo。 |
+| `pom.xml` | Maven | 根父工程，统一 Java、Spring Boot、Spring Cloud 版本和模块聚合。 |
+| `docs/` | 目录 | 后续放架构、模块盘点和接口设计文档。 |
+| `deploy/` | 目录 | 后续放 Docker、Nacos、数据库等部署配置。 |
+| `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
+| `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
+| `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
+| `xueyifang-auth/` | 目录 | 计划中的认证服务。 |
+| `xueyifang-user/` | 目录 | 计划中的用户服务。 |
+| `xueyifang-content/` | 目录 | 计划中的内容业务服务，名称和职责会在原项目盘点后校准。 |
+
+## 计划模块索引
+
+| 模块 | 状态 | 功能短评 |
+| --- | --- | --- |
+| `xueyifang-common-core` | 已创建 | 通用模型、错误码、工具和跨端无关约定；当前仅有包占位。 |
+| `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；当前仅有包占位。 |
+| `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前配置静态路由到认证、用户、内容服务。 |
+| `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类和基础端口配置。 |
+| `xueyifang-user` | 已创建 | 用户服务，当前包含 Spring Boot 启动类和基础端口配置。 |
+| `xueyifang-content` | 已创建 | 内容类业务占位，当前包含 Spring Boot 启动类和基础端口配置。 |
+
+## 关键文件索引
+
+| 路径 | 功能短评 |
+| --- | --- |
+| `xueyifang-common/pom.xml` | 公共模块聚合 POM。 |
+| `xueyifang-common/xueyifang-common-core/pom.xml` | 公共核心模块 POM。 |
+| `xueyifang-common/xueyifang-common-web/pom.xml` | 公共 Web 模块 POM。 |
+| `xueyifang-gateway/pom.xml` | 网关服务 POM，依赖 Spring Cloud Gateway 和 Actuator。 |
+| `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/XueyifangGatewayApplication.java` | 网关服务启动类。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名和初始静态路由配置。 |
+| `xueyifang-auth/pom.xml` | 认证服务 POM。 |
+| `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
+| `xueyifang-auth/src/main/resources/application.yml` | 认证服务端口和服务名配置。 |
+| `xueyifang-user/pom.xml` | 用户服务 POM。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/XueyifangUserApplication.java` | 用户服务启动类。 |
+| `xueyifang-user/src/main/resources/application.yml` | 用户服务端口和服务名配置。 |
+| `xueyifang-content/pom.xml` | 内容服务 POM。 |
+| `xueyifang-content/src/main/java/com/xueyifang/cloud/content/XueyifangContentApplication.java` | 内容服务启动类。 |
+| `xueyifang-content/src/main/resources/application.yml` | 内容服务端口和服务名配置。 |
+
+## Todo
+
+- 拉取或读取原后端项目，输出模块盘点。
+- 拉取或读取原前端项目，输出页面和接口盘点。
+- 确认注册中心和配置中心方案，默认优先评估 Nacos。

@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: xueyifang-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: xueyifang-auth
+          uri: http://localhost:8100
+          predicates:
+            - Path=/auth/**
+        - id: xueyifang-user
+          uri: http://localhost:8200
+          predicates:
+            - Path=/users/**
+        - id: xueyifang-content
+          uri: http://localhost:8300
+          predicates:
+            - Path=/content/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

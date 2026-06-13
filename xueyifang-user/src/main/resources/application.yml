@@ -1,0 +1,13 @@
+server:
+  port: 8200
+
+spring:
+  application:
+    name: xueyifang-user
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

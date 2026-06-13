@@ -1,0 +1,13 @@
+server:
+  port: 8100
+
+spring:
+  application:
+    name: xueyifang-auth
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

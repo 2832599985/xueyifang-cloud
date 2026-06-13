@@ -1,0 +1,27 @@
+# Build output
+target/
+*.class
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local runtime
+.env
+.env.*
+!.env.example
+
+# Maven wrapper runtime
+.mvn/wrapper/maven-wrapper.jar
+
