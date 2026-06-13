@@ -32,6 +32,7 @@
 - `xueyifang-common-web` 为 Servlet 服务自动装配统一异常处理和 `X-Request-Id` 日志上下文。
 - Gateway 入口生成或透传 `X-Request-Id`，并写回响应头。
 - GitHub Actions 基础 CI 覆盖 Docker Compose 配置校验和 Maven 构建验证。
+- `xueyifang-common-core` 提供 JWT 签发、解析和刷新基础能力；Gateway 校验 Bearer Token 并向下游透传可信 `X-User-*` 用户上下文。
 
 ## 本地构建
 

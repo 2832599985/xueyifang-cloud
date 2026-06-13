@@ -19,6 +19,7 @@
 | Git 初始化 | 已完成 | 已创建本地 Git 仓库，并加入基础忽略和换行规则。 |
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
+| 阶段 4 认证基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验和 `/auth/token/refresh`。 |
 
 ## 阶段计划
 
@@ -119,6 +120,12 @@
 - 建立前后端接口契约。
 - 补充认证链路测试。
 
+进度：
+
+- [x] 在 `common-core` 建立 JWT 签发、解析、刷新和 Bearer Token 解析基础能力。
+- [x] 在 Gateway 接入 Bearer Token 校验、公开路径白名单和可信 `X-User-*` 用户上下文透传。
+- [x] 在认证服务新增 `POST /auth/token/refresh`。
+
 验收标准：
 
 - 用户能完成登录和鉴权访问。
@@ -164,6 +171,7 @@
 | 2026-06-14 | 阶段 3 | 已完成 | 在 `common-core` 迁移 `BaseResponse`、`ErrorCode`、`ResultUtils`、`BusinessException`、用户上下文和链路常量；在 `common-web` 自动装配 Servlet 全局异常处理和 requestId 过滤器；在 Gateway 生成或透传 `X-Request-Id`。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 补充通用响应、异常映射、Servlet requestId、Gateway requestId 测试；使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 增加 GitHub Actions 基础 CI，执行 Docker Compose 配置校验和 `mvn -B clean verify`。 |
+| 2026-06-14 | 阶段 4 | 进行中 | 新增 JWT 公共能力、Gateway 鉴权过滤器和 Auth Token 刷新接口；相关模块测试通过。 |
 
 ## 待确认事项
 

@@ -38,6 +38,9 @@ http://localhost:8848/nacos
 | `NACOS_PASSWORD` | `nacos` | 预留给开启鉴权后的密码。 |
 | `NACOS_NAMESPACE` | 空 | 默认 public 命名空间。 |
 | `NACOS_GROUP` | `DEFAULT_GROUP` | 默认配置和注册分组。 |
+| `XUEYIFANG_JWT_SECRET` | `xueyifang-secret-key-2025-graduation-project` | 本地 JWT 签名密钥，生产环境必须覆盖为独立密钥。 |
+| `XUEYIFANG_JWT_EXPIRATION` | `604800000ms` | JWT 有效期，默认 7 天。 |
+| `XUEYIFANG_JWT_ISSUER` | `xueyifang` | JWT 签发方。 |
 
 配置导入格式：
 

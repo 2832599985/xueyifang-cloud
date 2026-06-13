@@ -43,6 +43,13 @@ management:
       exposure:
         include: health,info
 
+xueyifang:
+  auth:
+    jwt:
+      secret: ${XUEYIFANG_JWT_SECRET:xueyifang-secret-key-2025-graduation-project}
+      expiration: ${XUEYIFANG_JWT_EXPIRATION:604800000ms}
+      issuer: ${XUEYIFANG_JWT_ISSUER:xueyifang}
+
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{requestId:-}]"
