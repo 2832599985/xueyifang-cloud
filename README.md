@@ -30,6 +30,15 @@
 mvn clean verify
 ```
 
+## 本地基础设施
+
+```powershell
+Copy-Item deploy/docker/.env.example deploy/docker/.env
+docker compose --env-file deploy/docker/.env -f deploy/docker/docker-compose.yml up -d
+```
+
+更多说明见 [docs/local-infrastructure.md](docs/local-infrastructure.md)。
+
 ## 协作约定
 
 - 先读 `PROJECT_MEMORY.md`，再改代码。

@@ -95,11 +95,11 @@
 
 任务：
 
-- 接入 Nacos 或 Spring Cloud Config 的配置方案，优先按项目实际部署环境定。
-- 配置 Gateway 路由。
-- 配置统一异常、统一响应、基础日志。
-- 准备本地 Docker Compose，覆盖数据库、Redis、Nacos 等基础依赖。
-- 增加基础 CI。
+- [x] 接入 Nacos 或 Spring Cloud Config 的配置方案，优先按项目实际部署环境定。
+- [x] 配置 Gateway 路由。
+- [ ] 配置统一异常、统一响应、基础日志。
+- [x] 准备本地 Docker Compose，覆盖数据库、Redis、Nacos 等基础依赖。
+- [ ] 增加基础 CI。
 
 验收标准：
 
@@ -157,9 +157,13 @@
 | 2026-06-14 | 阶段 2 | 已完成 | 输出 `docs/service-boundary-design.md`，确定第一批落地服务为网关、认证、用户、服务市场和交易。 |
 | 2026-06-14 | 阶段 2 | 已完成 | 将 `xueyifang-content` 校准为 `xueyifang-service`，新增 `xueyifang-trade`，并更新网关路由。 |
 | 2026-06-14 | 阶段 2 | 已完成 | 使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 增加 Docker Compose 本地基础设施，覆盖 MySQL、Redis 和 Nacos。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 接入 Spring Cloud Alibaba Nacos Discovery 和 Config，并将网关路由改为 `lb://` 服务名。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过；执行 `docker compose config --quiet` 通过。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
 - 第一批迁移是否采用“认证、用户、服务列表、订单最短链路”的顺序。
 - 消息、系统、文件三个候选服务何时拆出，建议在主交易链路跑通后再决定。
+- Nacos 生产环境鉴权和外置数据库方案。

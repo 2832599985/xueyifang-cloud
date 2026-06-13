@@ -4,23 +4,36 @@ server:
 spring:
   application:
     name: xueyifang-gateway
+  config:
+    import: optional:nacos:${spring.application.name}.yml?group=${NACOS_GROUP:DEFAULT_GROUP}
   cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+      config:
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+        file-extension: yml
     gateway:
       routes:
         - id: xueyifang-auth
-          uri: http://localhost:8100
+          uri: lb://xueyifang-auth
           predicates:
             - Path=/auth/**
         - id: xueyifang-user
-          uri: http://localhost:8200
+          uri: lb://xueyifang-user
           predicates:
             - Path=/users/**,/permission/**
         - id: xueyifang-service
-          uri: http://localhost:8300
+          uri: lb://xueyifang-service
           predicates:
             - Path=/service/**,/service-image/**,/favorite/**,/review/**
         - id: xueyifang-trade
-          uri: http://localhost:8400
+          uri: lb://xueyifang-trade
           predicates:
             - Path=/order/**,/wallet/**,/dispute/**
 

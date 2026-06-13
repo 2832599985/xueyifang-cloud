@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 2 服务边界校准已完成；9 个 Maven 模块构建通过，下一步进入基础设施方案落地。
+- 当前状态：阶段 3 基础设施部分落地；已接入 Nacos 注册配置、本地 Docker Compose，并通过 Maven 和 Compose 配置校验。
 
 ## 根目录索引
 
@@ -29,7 +29,10 @@
 | `docs/` | 目录 | 架构、模块盘点和接口设计文档。 |
 | `docs/original-project-inventory.md` | 文档 | 原后端和前端盘点，包含业务域、API、数据表、前端页面、横切能力和拆分风险。 |
 | `docs/service-boundary-design.md` | 文档 | 服务拆分边界、暂缓服务、第一批迁移顺序和网关路由约定。 |
-| `deploy/` | 目录 | 后续放 Docker、Nacos、数据库等部署配置。 |
+| `docs/local-infrastructure.md` | 文档 | 本地 MySQL、Redis、Nacos 启动方式和应用接入说明。 |
+| `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
+| `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 环境变量示例。 |
+| `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
 | `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
@@ -59,7 +62,7 @@
 | `xueyifang-common/xueyifang-common-web/pom.xml` | 公共 Web 模块 POM。 |
 | `xueyifang-gateway/pom.xml` | 网关服务 POM，依赖 Spring Cloud Gateway 和 Actuator。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/XueyifangGatewayApplication.java` | 网关服务启动类。 |
-| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名和初始静态路由配置。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入和 `lb://` 路由配置。 |
 | `xueyifang-auth/pom.xml` | 认证服务 POM。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
 | `xueyifang-auth/src/main/resources/application.yml` | 认证服务端口和服务名配置。 |
@@ -76,4 +79,6 @@
 ## Todo
 
 - 设计第一批迁移顺序，建议认证、用户、服务列表、订单最短链路。
-- 确认注册中心和配置中心方案，默认优先评估 Nacos。
+- 配置统一响应、异常、错误码、用户上下文和基础日志。
+- 增加基础 CI。
+- 明确 Nacos 生产环境鉴权和外置数据库方案。
