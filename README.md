@@ -31,6 +31,7 @@
 - `xueyifang-common-core` 提供 `BaseResponse`、`ErrorCode`、`ResultUtils`、`BusinessException`、用户上下文和链路常量。
 - `xueyifang-common-web` 为 Servlet 服务自动装配统一异常处理和 `X-Request-Id` 日志上下文。
 - Gateway 入口生成或透传 `X-Request-Id`，并写回响应头。
+- GitHub Actions 基础 CI 覆盖 Docker Compose 配置校验和 Maven 构建验证。
 
 ## 本地构建
 

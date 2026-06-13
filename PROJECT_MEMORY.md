@@ -13,13 +13,14 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 3 基础设施和横切基础已部分落地；已接入 Nacos 注册配置、本地 Docker Compose、统一响应、统一异常和 requestId 日志上下文，并通过 Maven 和 Compose 配置校验。
+- 当前状态：阶段 3 基础设施和横切基础已完成；已接入 Nacos 注册配置、本地 Docker Compose、统一响应、统一异常、requestId 日志上下文和基础 CI，并通过 Maven 和 Compose 配置校验。
 
 ## 根目录索引
 
 | 路径 | 类型 | 功能短评 |
 | --- | --- | --- |
 | `AIREADME.md` | 文档 | 用户提供的协作约定；禁止修改。 |
+| `.github/workflows/ci.yml` | CI | GitHub Actions 基础流水线，校验 Docker Compose 配置并执行 Maven 构建。 |
 | `.gitattributes` | 配置 | 统一文本文件换行策略，降低 Windows 和类 Unix 环境差异。 |
 | `.gitignore` | 配置 | 忽略 Maven 构建产物、日志、本地环境文件和 IDE 文件。 |
 | `README.md` | 文档 | 项目简介、技术基线、模块说明和本地构建命令。 |
@@ -91,6 +92,5 @@
 ## Todo
 
 - 设计第一批迁移顺序，建议认证、用户、服务列表、订单最短链路。
-- 增加基础 CI。
 - 启动本地 Nacos 后，做一次网关到业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。

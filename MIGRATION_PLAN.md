@@ -100,7 +100,7 @@
 - [x] 配置 Gateway 路由。
 - [x] 配置统一异常、统一响应、基础日志。
 - [x] 准备本地 Docker Compose，覆盖数据库、Redis、Nacos 等基础依赖。
-- [ ] 增加基础 CI。
+- [x] 增加基础 CI。
 
 验收标准：
 
@@ -163,6 +163,7 @@
 | 2026-06-14 | 阶段 3 | 已完成 | 使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过；执行 `docker compose config --quiet` 通过。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 在 `common-core` 迁移 `BaseResponse`、`ErrorCode`、`ResultUtils`、`BusinessException`、用户上下文和链路常量；在 `common-web` 自动装配 Servlet 全局异常处理和 requestId 过滤器；在 Gateway 生成或透传 `X-Request-Id`。 |
 | 2026-06-14 | 阶段 3 | 已完成 | 补充通用响应、异常映射、Servlet requestId、Gateway requestId 测试；使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
+| 2026-06-14 | 阶段 3 | 已完成 | 增加 GitHub Actions 基础 CI，执行 Docker Compose 配置校验和 `mvn -B clean verify`。 |
 
 ## 待确认事项
 
