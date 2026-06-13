@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: xueyifang-service
+  datasource:
+    url: ${XUEYIFANG_MYSQL_URL:jdbc:mysql://127.0.0.1:3306/xueyifang?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${XUEYIFANG_MYSQL_USERNAME:root}
+    password: ${XUEYIFANG_MYSQL_PASSWORD:123123123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   config:
     import: optional:nacos:${spring.application.name}.yml?group=${NACOS_GROUP:DEFAULT_GROUP}
   cloud:
