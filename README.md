@@ -35,7 +35,7 @@
 - `xueyifang-common-core` 提供 JWT 签发、解析、刷新和 Token 黑名单 key 约定；Gateway 校验 Bearer Token、拒绝已登出 Token，并向下游透传可信 `X-User-*` 用户上下文。
 - `xueyifang-auth` 已接入 `user` 表登录/注册、BCrypt 密码校验、Token 刷新和 Redis 黑名单登出，并按 `user.publish_permission` 签发权限声明。
 - `xueyifang-user` 已接入 `user` 表当前用户、资料更新、改密和发布权限状态接口，并兼容旧 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` 路径。
-- `xueyifang-service` 已接入 `service`、`service_image` 和 `service_tag` 表，提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架和逻辑删除接口。
+- `xueyifang-service` 已接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review` 表，提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价列表和订单评价状态接口。
 - 认证与用户接口契约见 [docs/auth-user-api-contract.md](docs/auth-user-api-contract.md)。
 - 服务市场接口契约见 [docs/service-market-api-contract.md](docs/service-market-api-contract.md)。
 

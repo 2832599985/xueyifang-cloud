@@ -202,6 +202,28 @@ public class InMemoryServiceCatalogRepository implements ServiceCatalogRepositor
     }
 
     @Override
+    public boolean incrementFavoriteCount(Long serviceId) {
+        ServiceItem service = services.get(serviceId);
+        if (service == null) {
+            return false;
+        }
+
+        services.put(serviceId, serviceWithFavoriteCount(service, valueOrZero(service.favoriteCount()) + 1));
+        return true;
+    }
+
+    @Override
+    public boolean decrementFavoriteCount(Long serviceId) {
+        ServiceItem service = services.get(serviceId);
+        if (service == null) {
+            return false;
+        }
+
+        services.put(serviceId, serviceWithFavoriteCount(service, Math.max(valueOrZero(service.favoriteCount()) - 1, 0)));
+        return true;
+    }
+
+    @Override
     public List<ServiceImage> findImagesByServiceId(Long serviceId) {
         return images.stream()
                 .filter(image -> serviceId.equals(image.serviceId()))
@@ -241,6 +263,35 @@ public class InMemoryServiceCatalogRepository implements ServiceCatalogRepositor
 
     private <T> T valueOrCurrent(T value, T current) {
         return value != null ? value : current;
+    }
+
+    private int valueOrZero(Integer value) {
+        return value != null ? value : 0;
+    }
+
+    private ServiceItem serviceWithFavoriteCount(ServiceItem service, int favoriteCount) {
+        return new ServiceItem(
+                service.id(),
+                service.publisherId(),
+                service.title(),
+                service.description(),
+                service.tagId(),
+                service.tagName(),
+                service.categoryId(),
+                service.categoryName(),
+                service.professionalId(),
+                service.professionalName(),
+                service.price(),
+                service.unit(),
+                service.location(),
+                service.status(),
+                service.reviewStatus(),
+                favoriteCount,
+                service.orderCount(),
+                service.rating(),
+                service.coverImage(),
+                service.createTime(),
+                java.time.LocalDateTime.parse("2026-06-14T00:00:00"));
     }
 
     private record TagEntry(Long id, String name, Integer sortOrder, Integer status) {

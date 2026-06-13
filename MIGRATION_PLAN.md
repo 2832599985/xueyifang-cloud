@@ -20,7 +20,7 @@
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
 | 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口。 |
-| 阶段 5 服务市场最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览和发布者管理链路，提供服务列表、详情、标签、发布、我的服务、编辑、上下架和逻辑删除接口。 |
+| 阶段 5 服务市场最短链路 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动读取链路，提供服务列表、详情、标签、发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价列表和订单评价状态接口。 |
 
 ## 阶段计划
 
@@ -157,6 +157,8 @@
 - [x] 输出服务市场接口契约和本地初始化 SQL。
 - [x] 新增 `POST /service/publish`、`GET /service/myServices`、`PUT /service/{serviceId}`、`PUT /service/{serviceId}/online`、`PUT /service/{serviceId}/offline` 和 `DELETE /service/{serviceId}`。
 - [x] 服务发布、编辑、上下架和删除按登录用户、发布权限、发布者/管理员权限和状态机校验。
+- [x] 新增 `POST /favorite/collect`、`DELETE /favorite/collect/{serviceId}`、`GET /favorite/myCollections`、`GET /review/service/{serviceId}` 和 `GET /review/order/{orderId}/status`。
+- [x] 收藏写入保持幂等并同步服务收藏数；评价列表支持匿名展示，评价创建等待订单最短链路落地后接入。
 
 验收标准：
 
@@ -192,6 +194,7 @@
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-user` 接入 `user` 表当前用户、资料更新、改密和发布权限状态接口；Gateway 将旧 `/auth/currentUser` 等资料路径兼容转发到用户服务。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 接入服务市场只读链路，新增服务列表、详情、标签接口和 `service`/`service_image`/`service_tag` 初始化脚本。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补服务发布、我的服务、编辑、上下架和逻辑删除接口，并补充图片替换和权限/状态单测。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补收藏、我的收藏、评价公开列表和订单评价状态接口，并补充互动表初始化脚本和单测。 |
 
 ## 待确认事项
 

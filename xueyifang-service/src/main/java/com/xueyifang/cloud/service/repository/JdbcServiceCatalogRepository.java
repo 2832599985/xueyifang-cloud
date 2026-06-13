@@ -159,6 +159,28 @@ public class JdbcServiceCatalogRepository implements ServiceCatalogRepository {
     }
 
     @Override
+    public boolean incrementFavoriteCount(Long serviceId) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET favorite_count = favorite_count + 1
+                        WHERE id = ? AND is_deleted = 0
+                        """,
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean decrementFavoriteCount(Long serviceId) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET favorite_count = GREATEST(favorite_count - 1, 0)
+                        WHERE id = ? AND is_deleted = 0
+                        """,
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
     public List<ServiceImage> findImagesByServiceId(Long serviceId) {
         return jdbcTemplate.query("""
                         SELECT id, service_id, image_url, sort_order, is_cover

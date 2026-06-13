@@ -12,6 +12,7 @@ import com.xueyifang.cloud.service.dto.ServiceUpdateRequest;
 import com.xueyifang.cloud.service.repository.ServiceImage;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.support.InMemoryServiceCatalogRepository;
+import com.xueyifang.cloud.service.support.InMemoryServiceInteractionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,10 @@ class ServiceCatalogServiceTest {
 
     private final InMemoryServiceCatalogRepository repository = new InMemoryServiceCatalogRepository();
 
-    private final ServiceCatalogService serviceCatalogService = new ServiceCatalogService(repository);
+    private final InMemoryServiceInteractionRepository interactionRepository =
+            new InMemoryServiceInteractionRepository(repository);
+
+    private final ServiceCatalogService serviceCatalogService = new ServiceCatalogService(repository, interactionRepository);
 
     @BeforeEach
     void setUp() {
@@ -37,6 +41,7 @@ class ServiceCatalogServiceTest {
         repository.putImage(new ServiceImage(2L, 1L, "detail.jpg", 1, false));
         repository.putTag(1L, "study", 1, 1);
         repository.putTag(2L, "inactive", 2, 0);
+        interactionRepository.clearInteractions();
         UserContextHolder.clear();
     }
 
@@ -73,6 +78,17 @@ class ServiceCatalogServiceTest {
         assertThat(response.serviceId()).isEqualTo(1L);
         assertThat(response.images()).extracting("imageUrl")
                 .containsExactly("cover.jpg", "detail.jpg");
+        assertThat(response.isCollected()).isNull();
+    }
+
+    @Test
+    void includesCollectionStateForLoggedInUsers() {
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+        interactionRepository.addFavorite(10L, 1L);
+
+        ServiceDetailResponse response = serviceCatalogService.getServiceDetail(1L);
+
+        assertThat(response.isCollected()).isTrue();
     }
 
     @Test

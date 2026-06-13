@@ -29,10 +29,15 @@ public record ServiceDetailResponse(
         BigDecimal rating,
         String coverImage,
         List<ServiceImageResponse> images,
+        Boolean isCollected,
         LocalDateTime createTime,
         LocalDateTime updateTime) {
 
     public static ServiceDetailResponse from(ServiceItem service, List<ServiceImage> images) {
+        return from(service, images, null);
+    }
+
+    public static ServiceDetailResponse from(ServiceItem service, List<ServiceImage> images, Boolean isCollected) {
         List<ServiceImageResponse> imageResponses = images.stream()
                 .map(ServiceImageResponse::from)
                 .toList();
@@ -58,6 +63,7 @@ public record ServiceDetailResponse(
                 valueOrZero(service.rating()),
                 service.coverImage(),
                 imageResponses,
+                isCollected,
                 service.createTime(),
                 service.updateTime());
     }

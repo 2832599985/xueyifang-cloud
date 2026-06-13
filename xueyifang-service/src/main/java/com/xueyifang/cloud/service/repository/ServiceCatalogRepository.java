@@ -19,6 +19,10 @@ public interface ServiceCatalogRepository {
 
     boolean deleteService(Long serviceId);
 
+    boolean incrementFavoriteCount(Long serviceId);
+
+    boolean decrementFavoriteCount(Long serviceId);
+
     List<ServiceImage> findImagesByServiceId(Long serviceId);
 
     void insertImages(Long serviceId, List<String> imageUrls);

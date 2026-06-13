@@ -13,6 +13,7 @@ import com.xueyifang.cloud.service.dto.ServiceUpdateRequest;
 import com.xueyifang.cloud.service.repository.ServiceCreateCommand;
 import com.xueyifang.cloud.service.repository.ServiceCatalogRepository;
 import com.xueyifang.cloud.service.repository.ServiceImage;
+import com.xueyifang.cloud.service.repository.ServiceInteractionRepository;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.repository.ServiceListQuery;
 import com.xueyifang.cloud.service.repository.ServicePage;
@@ -48,8 +49,12 @@ public class ServiceCatalogService {
 
     private final ServiceCatalogRepository serviceCatalogRepository;
 
-    public ServiceCatalogService(ServiceCatalogRepository serviceCatalogRepository) {
+    private final ServiceInteractionRepository serviceInteractionRepository;
+
+    public ServiceCatalogService(ServiceCatalogRepository serviceCatalogRepository,
+                                 ServiceInteractionRepository serviceInteractionRepository) {
         this.serviceCatalogRepository = serviceCatalogRepository;
+        this.serviceInteractionRepository = serviceInteractionRepository;
     }
 
     public ServiceListResponse listServices(String keyword, Long tagId, Long categoryId, Long professionalId,
@@ -125,7 +130,10 @@ public class ServiceCatalogService {
         }
 
         List<ServiceImage> images = serviceCatalogRepository.findImagesByServiceId(serviceId);
-        return ServiceDetailResponse.from(service, images);
+        Boolean isCollected = UserContextHolder.get()
+                .map(user -> serviceInteractionRepository.existsFavorite(user.userId(), serviceId))
+                .orElse(null);
+        return ServiceDetailResponse.from(service, images, isCollected);
     }
 
     @Transactional(rollbackFor = Exception.class)

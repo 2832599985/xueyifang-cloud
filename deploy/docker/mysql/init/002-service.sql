@@ -57,3 +57,36 @@ CREATE TABLE IF NOT EXISTS `service_image` (
     PRIMARY KEY (`id`),
     KEY `idx_service_image_service` (`service_id`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service image';
+
+CREATE TABLE IF NOT EXISTS `service_favorite` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'user id',
+    `service_id` BIGINT UNSIGNED NOT NULL COMMENT 'service id',
+    `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'created time',
+    `update_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
+        COMMENT 'updated time',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_service_favorite_user_service` (`user_id`, `service_id`),
+    KEY `idx_service_favorite_service` (`service_id`),
+    KEY `idx_service_favorite_user_time` (`user_id`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service favorite';
+
+CREATE TABLE IF NOT EXISTS `service_review` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `service_id` BIGINT UNSIGNED NOT NULL COMMENT 'service id',
+    `order_id` BIGINT UNSIGNED NOT NULL COMMENT 'order id',
+    `buyer_id` BIGINT UNSIGNED NOT NULL COMMENT 'buyer user id',
+    `seller_id` BIGINT UNSIGNED NOT NULL COMMENT 'seller user id',
+    `rating` TINYINT NOT NULL COMMENT 'rating 1-5',
+    `content` VARCHAR(500) NOT NULL COMMENT 'review content',
+    `is_anonymous` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'anonymous flag',
+    `create_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'created time',
+    `update_time` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
+        COMMENT 'updated time',
+    `is_deleted` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'logical delete flag',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_service_review_order` (`order_id`),
+    KEY `idx_service_review_service` (`service_id`, `create_time`),
+    KEY `idx_service_review_buyer` (`buyer_id`),
+    KEY `idx_service_review_seller` (`seller_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service review';

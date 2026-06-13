@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-本契约覆盖第一批服务市场迁移的服务浏览和发布者管理最短链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架和逻辑删除。收藏和评价创建仍待后续迁移。
+本契约覆盖第一批服务市场迁移的服务浏览、发布者管理和互动最短链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价公开列表和订单评价状态。评价创建仍待订单最短链路迁移后接入。
 
 ## 路由与鉴权
 
@@ -17,8 +17,13 @@
 | `PUT` | `/service/{serviceId}/offline` | 下架服务。 | 发布者或管理员；仅已上架服务可下架。 |
 | `PUT` | `/service/{serviceId}/online` | 上架服务。 | 发布者或管理员；仅已下架或已驳回服务可上架。 |
 | `DELETE` | `/service/{serviceId}` | 逻辑删除服务，并逻辑删除图片。 | 发布者或管理员；已上架服务需先下架。 |
+| `POST` | `/favorite/collect` | 收藏服务，重复收藏保持幂等。 | 登录用户；仅可收藏自己可见的服务。 |
+| `DELETE` | `/favorite/collect/{serviceId}` | 取消收藏服务，未收藏时保持幂等。 | 登录用户 |
+| `GET` | `/favorite/myCollections` | 当前登录用户收藏列表。 | 登录用户 |
+| `GET` | `/review/service/{serviceId}` | 服务评价公开列表，匿名评价隐藏评价人信息。 | 公开已上架服务；发布者或管理员可查看非公开服务评价。 |
+| `GET` | `/review/order/{orderId}/status` | 查询订单是否已评价。 | 登录用户 |
 
-网关已将 `/service/**` 转发到 `xueyifang-service`，并对公开 GET 请求尝试解析可选 Token。业务服务只信任网关写入的 `X-User-*` 用户上下文。
+网关已将 `/service/**`、`/favorite/**` 和 `/review/**` 转发到 `xueyifang-service`，并对公开 GET 请求尝试解析可选 Token。业务服务只信任网关写入的 `X-User-*` 用户上下文。
 
 ## 查询参数
 
@@ -43,6 +48,13 @@
 | `pageNum` / `current` | 页码，兼容两种命名，默认 `1`。 |
 | `pageSize` | 每页数量，默认 `10`，最大 `100`。 |
 
+`GET /favorite/myCollections` 和 `GET /review/service/{serviceId}` 支持：
+
+| 参数 | 说明 |
+| --- | --- |
+| `pageNum` / `current` | 页码，兼容两种命名，默认 `1`。 |
+| `pageSize` | 每页数量，默认 `10`，最大 `100`。 |
+
 ## 写入请求
 
 `POST /service/publish` 和 `PUT /service/{serviceId}` 支持当前新字段，也兼容旧前端字段：
@@ -62,8 +74,16 @@
 
 当前最短链路暂不接系统审核配置，发布和重新上架会直接落为已上架、审核通过。后续迁移后台审核后，再接入审核流。
 
+`POST /favorite/collect` 请求：
+
+| 字段 | 说明 |
+| --- | --- |
+| `serviceId` | 服务 ID，必填。 |
+
+当前暂不实现 `POST /review/create`。评价创建需要订单归属和已完成状态校验，待 `xueyifang-trade` 订单最短链路落地后再接入；服务侧已提供 `service_review` 读取和订单评价状态查询。
+
 ## 数据表
 
-服务市场当前接入 `service`、`service_image` 和 `service_tag`。本地初始化脚本见 `deploy/docker/mysql/init/002-service.sql`。
+服务市场当前接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review`。本地初始化脚本见 `deploy/docker/mysql/init/002-service.sql`。
 
 状态约定先按最短链路落地：`service.status = 0` 表示已下架，`1` 表示已上架公开可见，`2` 表示审核中，`3` 表示已驳回；非 `1` 状态仅发布者或管理员可见。`service.review_status = 1` 表示审核通过。
