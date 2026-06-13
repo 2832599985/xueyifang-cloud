@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 1 原项目盘点已完成；下一步进入服务边界设计和模块骨架校准。
+- 当前状态：阶段 2 服务边界校准已完成；9 个 Maven 模块构建通过，下一步进入基础设施方案落地。
 
 ## 根目录索引
 
@@ -28,13 +28,15 @@
 | `pom.xml` | Maven | 根父工程，统一 Java、Spring Boot、Spring Cloud 版本和模块聚合。 |
 | `docs/` | 目录 | 架构、模块盘点和接口设计文档。 |
 | `docs/original-project-inventory.md` | 文档 | 原后端和前端盘点，包含业务域、API、数据表、前端页面、横切能力和拆分风险。 |
+| `docs/service-boundary-design.md` | 文档 | 服务拆分边界、暂缓服务、第一批迁移顺序和网关路由约定。 |
 | `deploy/` | 目录 | 后续放 Docker、Nacos、数据库等部署配置。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
 | `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
 | `xueyifang-auth/` | 目录 | 计划中的认证服务。 |
 | `xueyifang-user/` | 目录 | 计划中的用户服务。 |
-| `xueyifang-content/` | 目录 | 计划中的内容业务服务，名称和职责会在原项目盘点后校准。 |
+| `xueyifang-service/` | 目录 | 服务市场模块，承载服务发布、浏览、收藏和评价展示。 |
+| `xueyifang-trade/` | 目录 | 交易模块，承载订单、钱包流水、退款和纠纷。 |
 
 ## 计划模块索引
 
@@ -42,10 +44,11 @@
 | --- | --- | --- |
 | `xueyifang-common-core` | 已创建 | 通用模型、错误码、工具和跨端无关约定；当前仅有包占位。 |
 | `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；当前仅有包占位。 |
-| `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前配置静态路由到认证、用户、内容服务。 |
+| `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前配置静态路由到认证、用户、服务市场和交易服务。 |
 | `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类和基础端口配置。 |
 | `xueyifang-user` | 已创建 | 用户服务，当前包含 Spring Boot 启动类和基础端口配置。 |
-| `xueyifang-content` | 已创建 | 内容类业务占位，当前包含 Spring Boot 启动类和基础端口配置。 |
+| `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类和基础端口配置。 |
+| `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类和基础端口配置。 |
 
 ## 关键文件索引
 
@@ -63,12 +66,14 @@
 | `xueyifang-user/pom.xml` | 用户服务 POM。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/XueyifangUserApplication.java` | 用户服务启动类。 |
 | `xueyifang-user/src/main/resources/application.yml` | 用户服务端口和服务名配置。 |
-| `xueyifang-content/pom.xml` | 内容服务 POM。 |
-| `xueyifang-content/src/main/java/com/xueyifang/cloud/content/XueyifangContentApplication.java` | 内容服务启动类。 |
-| `xueyifang-content/src/main/resources/application.yml` | 内容服务端口和服务名配置。 |
+| `xueyifang-service/pom.xml` | 服务市场 POM。 |
+| `xueyifang-service/src/main/java/com/xueyifang/cloud/service/XueyifangServiceApplication.java` | 服务市场启动类。 |
+| `xueyifang-service/src/main/resources/application.yml` | 服务市场端口和服务名配置。 |
+| `xueyifang-trade/pom.xml` | 交易服务 POM。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/XueyifangTradeApplication.java` | 交易服务启动类。 |
+| `xueyifang-trade/src/main/resources/application.yml` | 交易服务端口和服务名配置。 |
 
 ## Todo
 
-- 阶段 2 校准服务边界，重点评估 `xueyifang-content` 改名为 `xueyifang-service`，并新增 `xueyifang-trade`。
 - 设计第一批迁移顺序，建议认证、用户、服务列表、订单最短链路。
 - 确认注册中心和配置中心方案，默认优先评估 Nacos。

@@ -11,10 +11,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>xueyifang-content</artifactId>
+    <artifactId>xueyifang-service</artifactId>
     <packaging>jar</packaging>
 
-    <name>xueyifang-content</name>
+    <name>xueyifang-service</name>
 
     <dependencies>
         <dependency>
@@ -46,4 +46,3 @@
         </plugins>
     </build>
 </project>
-

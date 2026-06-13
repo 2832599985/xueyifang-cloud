@@ -24,7 +24,8 @@
         <module>xueyifang-gateway</module>
         <module>xueyifang-auth</module>
         <module>xueyifang-user</module>
-        <module>xueyifang-content</module>
+        <module>xueyifang-service</module>
+        <module>xueyifang-trade</module>
     </modules>
 
     <properties>
@@ -57,4 +58,3 @@
         </pluginManagement>
     </build>
 </project>
-

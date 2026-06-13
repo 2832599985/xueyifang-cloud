@@ -66,14 +66,28 @@
 - `xueyifang-gateway`：统一入口、路由、跨域、限流、认证透传。
 - `xueyifang-auth`：登录、令牌、权限聚合。
 - `xueyifang-user`：用户、角色、资料、账号状态。
-- `xueyifang-content`：课程、文章、分类、评论等内容类业务，具体名称以后按原项目调整。
+- `xueyifang-service`：服务发布、浏览、收藏、评价展示。
+- `xueyifang-trade`：订单、钱包流水、退款、纠纷。
 - `xueyifang-common`：通用返回结构、异常、工具、Web 约定。
+
+暂缓拆出的候选服务：
+
+- `xueyifang-message`：聊天、通知、WebSocket。
+- `xueyifang-system`：专业、交易地点、系统配置、字典。
+- `xueyifang-file`：上传、删除、访问、本地或 OSS 存储。
 
 验收标准：
 
 - 每个服务都有清晰职责和不做什么。
 - 服务间调用关系画清楚。
 - 数据归属和事务边界有初版判断。
+
+进度：
+
+- [x] 输出 `docs/service-boundary-design.md`。
+- [x] 将 `xueyifang-content` 校准为 `xueyifang-service`。
+- [x] 新增 `xueyifang-trade`。
+- [x] 更新网关静态路由。
 
 ### 阶段 3：基础设施落地
 
@@ -140,9 +154,12 @@
 | 2026-06-14 | 阶段 0 | 已完成 | 补充提交约定：每完成一个模块、阶段或明确任务后创建带说明的 Git 提交。 |
 | 2026-06-14 | 阶段 1 | 已完成 | 拉取原后端和前端项目到 `D:\_Code\Java\_reference\xueyifang-original`，未将旧源码纳入新仓库。 |
 | 2026-06-14 | 阶段 1 | 已完成 | 输出 `docs/original-project-inventory.md`，记录后端业务域、API 分组、数据表、前端页面、横切能力和拆分风险。 |
+| 2026-06-14 | 阶段 2 | 已完成 | 输出 `docs/service-boundary-design.md`，确定第一批落地服务为网关、认证、用户、服务市场和交易。 |
+| 2026-06-14 | 阶段 2 | 已完成 | 将 `xueyifang-content` 校准为 `xueyifang-service`，新增 `xueyifang-trade`，并更新网关路由。 |
+| 2026-06-14 | 阶段 2 | 已完成 | 使用 Java 21 执行 `mvn clean verify`，9 个模块构建通过。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
-- 阶段 2 是否将当前 `xueyifang-content` 调整为 `xueyifang-service`，并新增 `xueyifang-trade`。
 - 第一批迁移是否采用“认证、用户、服务列表、订单最短链路”的顺序。
+- 消息、系统、文件三个候选服务何时拆出，建议在主交易链路跑通后再决定。

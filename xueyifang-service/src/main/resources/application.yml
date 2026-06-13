@@ -1,0 +1,12 @@
+server:
+  port: 8300
+
+spring:
+  application:
+    name: xueyifang-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

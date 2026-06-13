@@ -21,7 +21,8 @@
 | `xueyifang-gateway` | 统一网关入口。 |
 | `xueyifang-auth` | 认证服务。 |
 | `xueyifang-user` | 用户服务。 |
-| `xueyifang-content` | 内容业务服务占位，等待原项目盘点后校准职责。 |
+| `xueyifang-service` | 服务市场，承载服务发布、浏览、收藏和评价展示。 |
+| `xueyifang-trade` | 交易服务，承载订单、钱包流水、退款和纠纷。 |
 
 ## 本地构建
 

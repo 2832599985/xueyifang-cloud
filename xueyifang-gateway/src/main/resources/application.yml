@@ -14,15 +14,18 @@ spring:
         - id: xueyifang-user
           uri: http://localhost:8200
           predicates:
-            - Path=/users/**
-        - id: xueyifang-content
+            - Path=/users/**,/permission/**
+        - id: xueyifang-service
           uri: http://localhost:8300
           predicates:
-            - Path=/content/**
+            - Path=/service/**,/service-image/**,/favorite/**,/review/**
+        - id: xueyifang-trade
+          uri: http://localhost:8400
+          predicates:
+            - Path=/order/**,/wallet/**,/dispute/**
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
-

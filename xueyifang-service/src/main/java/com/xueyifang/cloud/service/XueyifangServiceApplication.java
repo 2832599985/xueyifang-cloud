@@ -1,13 +1,12 @@
-package com.xueyifang.cloud.content;
+package com.xueyifang.cloud.service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class XueyifangContentApplication {
+public class XueyifangServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(XueyifangContentApplication.class, args);
+        SpringApplication.run(XueyifangServiceApplication.class, args);
     }
 }
-
