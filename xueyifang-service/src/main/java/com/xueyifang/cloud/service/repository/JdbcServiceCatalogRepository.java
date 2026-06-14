@@ -129,11 +129,38 @@ public class JdbcServiceCatalogRepository implements ServiceCatalogRepository {
     public boolean updateServiceStatus(Long serviceId, int status, int reviewStatus) {
         int updated = jdbcTemplate.update("""
                         UPDATE `service`
-                        SET status = ?, review_status = ?
+                        SET status = ?,
+                            review_status = ?,
+                            review_reason = CASE WHEN ? <> 2 THEN NULL ELSE review_reason END,
+                            reviewed_by = CASE WHEN ? <> 2 THEN NULL ELSE reviewed_by END,
+                            reviewed_at = CASE WHEN ? <> 2 THEN NULL ELSE reviewed_at END
                         WHERE id = ? AND is_deleted = 0
                         """,
                 status,
                 reviewStatus,
+                reviewStatus,
+                reviewStatus,
+                reviewStatus,
+                serviceId);
+        return updated > 0;
+    }
+
+    @Override
+    public boolean updateServiceReview(Long serviceId, int status, int reviewStatus, String reviewReason,
+                                       Long reviewedBy) {
+        int updated = jdbcTemplate.update("""
+                        UPDATE `service`
+                        SET status = ?,
+                            review_status = ?,
+                            review_reason = ?,
+                            reviewed_by = ?,
+                            reviewed_at = CURRENT_TIMESTAMP(3)
+                        WHERE id = ? AND status = 2 AND review_status = 0 AND is_deleted = 0
+                        """,
+                status,
+                reviewStatus,
+                reviewReason,
+                reviewedBy,
                 serviceId);
         return updated > 0;
     }

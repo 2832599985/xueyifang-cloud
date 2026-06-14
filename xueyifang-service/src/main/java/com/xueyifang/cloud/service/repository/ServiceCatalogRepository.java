@@ -15,6 +15,8 @@ public interface ServiceCatalogRepository {
 
     boolean updateServiceStatus(Long serviceId, int status, int reviewStatus);
 
+    boolean updateServiceReview(Long serviceId, int status, int reviewStatus, String reviewReason, Long reviewedBy);
+
     boolean updateCoverImage(Long serviceId, String coverImage);
 
     boolean deleteService(Long serviceId);

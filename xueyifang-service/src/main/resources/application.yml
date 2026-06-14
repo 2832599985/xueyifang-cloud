@@ -30,6 +30,13 @@ management:
       exposure:
         include: health,info
 
+xueyifang:
+  service:
+    notification:
+      enabled: ${SERVICE_NOTIFICATION_ENABLED:true}
+      message-base-url: ${SERVICE_NOTIFICATION_MESSAGE_BASE_URL:http://xueyifang-message}
+      create-path: ${SERVICE_NOTIFICATION_CREATE_PATH:/internal/notifications}
+
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{requestId:-}]"

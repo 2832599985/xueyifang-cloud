@@ -30,11 +30,13 @@
 | `PUT` | `/users/me/password` | `/auth/changePassword` | 校验旧密码后更新 BCrypt 密码。 |
 | `GET` | `/permission/status` | 无 | 查询当前用户发布权限状态。 |
 | `POST` | `/permission/apply` | 无 | 提交发布权限申请。已拥有权限时直接返回 `approved`。 |
+| `GET` | `/admin/users/pending` | 无 | 管理员分页查询待审核发布权限申请。 |
+| `PUT` | `/admin/permission/review` | `{ "userId": 1, "approved": true, "reason": "" }` | 管理员审核发布权限申请，通过后授予发布权限，拒绝后记录原因。 |
 
-网关把 `/auth/currentUser`、`/auth/updateProfile` 和 `/auth/changePassword` 路由到 `xueyifang-user`，其余 `/auth/**` 仍路由到 `xueyifang-auth`。
+网关把 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword`、`/users/**`、`/permission/**`、`/admin/users/**` 和 `/admin/permission/**` 路由到 `xueyifang-user`，其余 `/auth/**` 仍路由到 `xueyifang-auth`。
 
 ## 用户资料字段
 
-`user` 表当前同时保留新认证字段和旧单体资料字段：`username`、`student_id`、`real_name`、`nickname`、`phone`、`email`、`dormitory`、`grade`、`professional_id`、`avatar`、`bio`、`role`、`publish_permission`、`permission_review_status`、`wallet_balance`、`frozen_amount`、`status` 和 `account_status`。
+`user` 表当前同时保留新认证字段和旧单体资料字段：`username`、`student_id`、`real_name`、`nickname`、`phone`、`email`、`dormitory`、`grade`、`professional_id`、`avatar`、`bio`、`role`、`publish_permission`、`permission_review_status`、`permission_apply_reason`、`permission_review_reason`、`permission_reviewed_by`、`permission_reviewed_at`、`wallet_balance`、`frozen_amount`、`status` 和 `account_status`。
 
-现阶段用户服务只负责资料、角色、发布权限和账号状态。钱包余额仍保留在表中以兼容旧结构，交易迁移时再收口资金边界。
+发布权限审核完成后，用户服务会通过消息服务内部 `POST /internal/notifications` 创建 `notificationType=1` 的通知；通知失败只记录日志，不回滚审核结果。钱包余额仍保留在表中以兼容旧结构，交易迁移时再收口资金边界。

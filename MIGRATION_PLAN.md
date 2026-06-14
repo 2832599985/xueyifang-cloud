@@ -19,8 +19,8 @@
 | Git 初始化 | 已完成 | 已创建本地 Git 仓库，并加入基础忽略和换行规则。 |
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
-| 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口。 |
-| 阶段 5 业务模块逐步迁移 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理和互动链路；`xueyifang-trade` 已接入订单、退款、钱包、纠纷、订单定时任务和交易/纠纷通知回接；`xueyifang-system` 已接入专业、交易地点和系统配置；`xueyifang-file` 已接入本地文件上传、删除和查看；`xueyifang-message` 已接入聊天、通知、内部通知创建和单实例 WebSocket。 |
+| 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请和后台权限审核通知回接。 |
+| 阶段 5 业务模块逐步迁移 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理、`REVIEW_MODE` 审核流、后台服务审核和互动链路；`xueyifang-trade` 已接入订单、退款、钱包、纠纷、订单定时任务和交易/纠纷通知回接；`xueyifang-system` 已接入专业、交易地点和系统配置；`xueyifang-file` 已接入本地文件上传、删除和查看；`xueyifang-message` 已接入聊天、通知、内部通知创建和单实例 WebSocket。 |
 
 ## 阶段计划
 
@@ -131,6 +131,7 @@
 - [x] 接入 Redis Token 黑名单，新增 `POST /auth/logout`，并让 Gateway 拒绝已登出 Token。
 - [x] 在用户服务接入 `user` 表，新增当前用户、资料更新、改密和发布权限状态接口。
 - [x] 保留 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` 兼容路径，并输出认证与用户接口契约。
+- [x] 新增后台发布权限待审列表和审核接口，并在审核通过/驳回后回接消息服务通知。
 
 验收标准：
 
@@ -171,6 +172,7 @@
 - [x] 新增 `xueyifang-file`，接入本地文件存储，支持 `/file/upload`、`/file/upload/batch`、`/file/delete` 和 `/file/view/**`，并通过网关兼容 `/api/file/**`。
 - [x] 新增 `xueyifang-message`，接入 `user_chat` 和 `notification`，支持聊天发送、聊天记录、会话列表、通知列表、未读数、标记已读和 `/api/ws` WebSocket 兼容入口。
 - [x] 回接交易和纠纷通知生产动作，支持订单、退款和纠纷关键状态通过消息服务内部接口创建通知。
+- [x] 服务发布和重新上架接入 `sys_config.REVIEW_MODE`，新增后台服务待审列表和审核接口，并在审核结果产生后回接消息服务通知。
 
 验收标准：
 
@@ -204,6 +206,7 @@
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `common-web` 自动解析 Gateway 透传的 `X-User-*` 用户上下文，并补充 ThreadLocal 清理测试。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-auth` 接入 `user` 表登录/注册、BCrypt 密码校验、Redis Token 黑名单和登出接口；Gateway 增加黑名单 Token 拒绝。 |
 | 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-user` 接入 `user` 表当前用户、资料更新、改密和发布权限状态接口；Gateway 将旧 `/auth/currentUser` 等资料路径兼容转发到用户服务。 |
+| 2026-06-14 | 阶段 4 | 进行中 | 在 `xueyifang-user` 新增 `/admin/users/pending` 和 `/admin/permission/review`，记录权限申请/审核痕迹，并通过消息服务内部接口发送审核通知。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 接入服务市场只读链路，新增服务列表、详情、标签接口和 `service`/`service_image`/`service_tag` 初始化脚本。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补服务发布、我的服务、编辑、上下架和逻辑删除接口，并补充图片替换和权限/状态单测。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 补收藏、我的收藏、评价公开列表和订单评价状态接口，并补充互动表初始化脚本和单测。 |
@@ -216,10 +219,11 @@
 | 2026-06-14 | 阶段 5 | 进行中 | 新增 `xueyifang-file`，迁移本地文件上传、批量上传、删除和查看接口，补充 `/api/file/**` 网关兼容路由和文件服务单元测试。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 新增 `xueyifang-message`，迁移聊天、通知和 `/api/ws` WebSocket 兼容入口，补充消息表初始化脚本和服务层单元测试。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 回接交易和纠纷通知生产动作：消息服务新增内部通知创建接口，交易服务在订单、退款和纠纷关键状态提交后调用消息服务创建通知。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 接入 `REVIEW_MODE` 审核流，新增 `/admin/services/pending` 和 `/admin/services/service/review`，并回接服务审核通知；执行 `mvn -pl xueyifang-user,xueyifang-service -am test` 通过。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
-- 第一批迁移已采用“认证、用户、服务列表、订单最短链路、系统字典、文件能力、消息能力”的顺序；交易和纠纷通知已回接，后续优先补权限审核/服务审核通知和本地联通验证。
+- 第一批迁移已采用“认证、用户、服务列表、订单最短链路、系统字典、文件能力、消息能力”的顺序；交易、纠纷、权限审核和服务审核通知已回接，后续优先做本地联通验证。
 - 消息服务已拆出，当前 WebSocket 使用单实例内存会话表；多实例部署前需要补 Redis pub/sub、消息队列广播或粘性会话方案。
 - Nacos 生产环境鉴权和外置数据库方案。

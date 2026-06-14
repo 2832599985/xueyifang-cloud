@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS `service` (
     `location` VARCHAR(100) DEFAULT NULL COMMENT 'service location',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '0 offline, 1 online, 2 reviewing, 3 rejected',
     `review_status` TINYINT NOT NULL DEFAULT 1 COMMENT '0 pending, 1 approved, 2 rejected',
+    `review_reason` VARCHAR(200) DEFAULT NULL COMMENT 'service review reason',
+    `reviewed_by` BIGINT UNSIGNED DEFAULT NULL COMMENT 'service reviewer admin user id',
+    `reviewed_at` DATETIME(3) DEFAULT NULL COMMENT 'service reviewed time',
     `favorite_count` INT NOT NULL DEFAULT 0 COMMENT 'favorite count',
     `order_count` INT NOT NULL DEFAULT 0 COMMENT 'order count',
     `rating` DECIMAL(3, 2) NOT NULL DEFAULT 0.00 COMMENT 'average rating',
@@ -39,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `service` (
     PRIMARY KEY (`id`),
     KEY `idx_service_publisher` (`publisher_id`),
     KEY `idx_service_status_update_time` (`status`, `update_time`),
+    KEY `idx_service_review_status_time` (`review_status`, `update_time`),
     KEY `idx_service_tag` (`tag_id`),
     KEY `idx_service_category` (`category_id`),
     KEY `idx_service_professional` (`professional_id`)

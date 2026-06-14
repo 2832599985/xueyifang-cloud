@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-本契约覆盖第一批服务市场迁移的服务浏览、发布者管理和互动最短链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价公开列表和订单评价状态。
+本契约覆盖第一批服务市场迁移的服务浏览、发布者管理、后台审核和互动链路：服务列表、服务详情、服务标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、后台服务审核、收藏、我的收藏、评价创建、评价公开列表和订单评价状态。
 
 ## 路由与鉴权
 
@@ -17,6 +17,8 @@
 | `PUT` | `/service/{serviceId}/offline` | 下架服务。 | 发布者或管理员；仅已上架服务可下架。 |
 | `PUT` | `/service/{serviceId}/online` | 上架服务。 | 发布者或管理员；仅已下架或已驳回服务可上架。 |
 | `DELETE` | `/service/{serviceId}` | 逻辑删除服务，并逻辑删除图片。 | 发布者或管理员；已上架服务需先下架。 |
+| `GET` | `/admin/services/pending` | 管理员分页查询待审核服务。 | 管理员 |
+| `PUT` | `/admin/services/service/review` | 管理员审核服务发布申请。 | 管理员 |
 | `POST` | `/favorite/collect` | 收藏服务，重复收藏保持幂等。 | 登录用户；仅可收藏自己可见的服务。 |
 | `DELETE` | `/favorite/collect/{serviceId}` | 取消收藏服务，未收藏时保持幂等。 | 登录用户 |
 | `GET` | `/favorite/myCollections` | 当前登录用户收藏列表。 | 登录用户 |
@@ -24,7 +26,7 @@
 | `GET` | `/review/service/{serviceId}` | 服务评价公开列表，匿名评价隐藏评价人信息。 | 公开已上架服务；发布者或管理员可查看非公开服务评价。 |
 | `GET` | `/review/order/{orderId}/status` | 查询订单是否已评价。 | 登录用户 |
 
-网关已将 `/service/**`、`/favorite/**` 和 `/review/**` 转发到 `xueyifang-service`，并对公开 GET 请求尝试解析可选 Token。业务服务只信任网关写入的 `X-User-*` 用户上下文。
+网关已将 `/service/**`、`/favorite/**`、`/review/**` 和 `/admin/services/**` 转发到 `xueyifang-service`，并对公开 GET 请求尝试解析可选 Token。业务服务只信任网关写入的 `X-User-*` 用户上下文。
 
 ## 查询参数
 
@@ -73,7 +75,15 @@
 | `coverImage` | 封面图；未传时取图片列表第一张。 |
 | `images` | 图片 URL 列表；编辑时传 `null` 表示不改图片，传空数组表示清空图片。 |
 
-当前最短链路暂不接系统审核配置，发布和重新上架会直接落为已上架、审核通过。后续迁移后台审核后，再接入审核流。
+发布和重新上架会读取启用的 `sys_config.REVIEW_MODE`：值为 `1` 时进入审核中，值为 `2` 时直接上架。管理员操作不需要再次审核。
+
+`PUT /admin/services/service/review` 请求：
+
+| 字段 | 说明 |
+| --- | --- |
+| `serviceId` | 服务 ID，必填。 |
+| `approved` | 审核结果，`true` 表示通过并上架，`false` 表示驳回。 |
+| `reason` | 审核说明，驳回时作为通知内容和审核原因记录。 |
 
 `POST /favorite/collect` 请求：
 
@@ -96,4 +106,4 @@
 
 服务市场当前接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review`，并在评价创建时读取 `service_order` 的订单归属和完成状态。本地服务市场初始化脚本见 `deploy/docker/mysql/init/002-service.sql`，交易表初始化脚本见 `deploy/docker/mysql/init/003-trade.sql`。
 
-状态约定先按最短链路落地：`service.status = 0` 表示已下架，`1` 表示已上架公开可见，`2` 表示审核中，`3` 表示已驳回；非 `1` 状态仅发布者或管理员可见。`service.review_status = 1` 表示审核通过。
+状态约定：`service.status = 0` 表示已下架，`1` 表示已上架公开可见，`2` 表示审核中，`3` 表示已驳回；非 `1` 状态仅发布者或管理员可见。`service.review_status = 0` 表示待审核，`1` 表示审核通过，`2` 表示审核拒绝。审核结果会记录 `review_reason`、`reviewed_by` 和 `reviewed_at`，并通过消息服务内部接口创建 `notificationType=5` 的通知。

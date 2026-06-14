@@ -87,6 +87,9 @@ public class UserProfileService {
 
     @Transactional(rollbackFor = Exception.class)
     public PermissionApplyResponse applyPermission(PermissionApplyRequest request) {
+        if (request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "request must not be null");
+        }
         UserAccount user = getCurrentUserAccount();
         if (effectivePublishPermission(user) == HAS_PUBLISH_PERMISSION
                 || effectivePermissionReviewStatus(user) == PERMISSION_APPROVED) {
@@ -97,7 +100,7 @@ public class UserProfileService {
         }
 
         boolean updated = userRepository.updatePermissionApplication(
-                user.id(), NO_PUBLISH_PERMISSION, PERMISSION_PENDING);
+                user.id(), NO_PUBLISH_PERMISSION, PERMISSION_PENDING, normalizeOptional(request.reason()));
         if (!updated) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "permission application failed");
         }
@@ -133,9 +136,9 @@ public class UserProfileService {
                 reviewStatus,
                 status,
                 statusText,
-                null,
-                null,
-                null);
+                status,
+                user.permissionReviewReason(),
+                user.permissionReviewedAt());
     }
 
     private UserAccount getCurrentUserAccount() {

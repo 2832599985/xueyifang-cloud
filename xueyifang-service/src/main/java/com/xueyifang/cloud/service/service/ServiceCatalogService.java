@@ -4,12 +4,17 @@ import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.context.LoginUserContext;
 import com.xueyifang.cloud.common.core.context.UserContextHolder;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
+import com.xueyifang.cloud.service.dto.AdminServiceReviewRequest;
+import com.xueyifang.cloud.service.dto.PageResponse;
+import com.xueyifang.cloud.service.dto.PendingServiceReviewResponse;
 import com.xueyifang.cloud.service.dto.ServiceDetailResponse;
 import com.xueyifang.cloud.service.dto.ServiceListResponse;
 import com.xueyifang.cloud.service.dto.ServicePublishRequest;
+import com.xueyifang.cloud.service.dto.ServiceReviewDecisionResponse;
 import com.xueyifang.cloud.service.dto.ServiceSummaryResponse;
 import com.xueyifang.cloud.service.dto.ServiceTagResponse;
 import com.xueyifang.cloud.service.dto.ServiceUpdateRequest;
+import com.xueyifang.cloud.service.notification.ServiceNotificationPublisher;
 import com.xueyifang.cloud.service.repository.ServiceCreateCommand;
 import com.xueyifang.cloud.service.repository.ServiceCatalogRepository;
 import com.xueyifang.cloud.service.repository.ServiceImage;
@@ -17,6 +22,7 @@ import com.xueyifang.cloud.service.repository.ServiceInteractionRepository;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.repository.ServiceListQuery;
 import com.xueyifang.cloud.service.repository.ServicePage;
+import com.xueyifang.cloud.service.repository.ServiceReviewModeRepository;
 import com.xueyifang.cloud.service.repository.ServiceUpdateCommand;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +43,10 @@ public class ServiceCatalogService {
 
     private static final int REVIEW_APPROVED = 1;
 
+    private static final int REVIEW_PENDING = 0;
+
+    private static final int REVIEW_REJECTED = 2;
+
     private static final int ADMIN_ROLE = 2;
 
     private static final int HAS_PUBLISH_PERMISSION = 1;
@@ -51,10 +61,18 @@ public class ServiceCatalogService {
 
     private final ServiceInteractionRepository serviceInteractionRepository;
 
+    private final ServiceReviewModeRepository serviceReviewModeRepository;
+
+    private final ServiceNotificationPublisher notificationPublisher;
+
     public ServiceCatalogService(ServiceCatalogRepository serviceCatalogRepository,
-                                 ServiceInteractionRepository serviceInteractionRepository) {
+                                 ServiceInteractionRepository serviceInteractionRepository,
+                                 ServiceReviewModeRepository serviceReviewModeRepository,
+                                 ServiceNotificationPublisher notificationPublisher) {
         this.serviceCatalogRepository = serviceCatalogRepository;
         this.serviceInteractionRepository = serviceInteractionRepository;
+        this.serviceReviewModeRepository = serviceReviewModeRepository;
+        this.notificationPublisher = notificationPublisher;
     }
 
     public ServiceListResponse listServices(String keyword, Long tagId, Long categoryId, Long professionalId,
@@ -118,6 +136,28 @@ public class ServiceCatalogService {
                 pages);
     }
 
+    public PageResponse<PendingServiceReviewResponse> listPendingReviewServices(Integer pageNum, Integer pageSize) {
+        requireAdmin();
+        int normalizedPageNum = normalizePageNum(pageNum);
+        int normalizedPageSize = normalizePageSize(pageSize);
+
+        ServicePage page = serviceCatalogRepository.findServices(new ServiceListQuery(
+                null,
+                null,
+                null,
+                null,
+                null,
+                REVIEWING_STATUS,
+                (normalizedPageNum - 1) * normalizedPageSize,
+                normalizedPageSize));
+
+        List<PendingServiceReviewResponse> records = page.records().stream()
+                .filter(service -> Integer.valueOf(REVIEW_PENDING).equals(service.reviewStatus()))
+                .map(PendingServiceReviewResponse::from)
+                .toList();
+        return PageResponse.of(records, page.total(), normalizedPageNum, normalizedPageSize);
+    }
+
     public ServiceDetailResponse getServiceDetail(Long serviceId) {
         if (serviceId == null || serviceId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "serviceId must be positive");
@@ -149,6 +189,10 @@ public class ServiceCatalogService {
         List<String> imageUrls = normalizeImages(request.images());
         String coverImage = firstNonBlank(normalizeOptional(request.coverImage()), firstImageOrNull(imageUrls));
 
+        boolean reviewRequired = serviceReviewModeRepository.requiresReview() && !isAdmin(user);
+        int serviceStatus = reviewRequired ? REVIEWING_STATUS : ONLINE_STATUS;
+        int reviewStatus = reviewRequired ? REVIEW_PENDING : REVIEW_APPROVED;
+
         Long serviceId = serviceCatalogRepository.createService(new ServiceCreateCommand(
                 user.userId(),
                 requireText(firstNonBlank(request.title(), request.serviceTitle()), "title"),
@@ -162,8 +206,8 @@ public class ServiceCatalogService {
                 requirePositivePrice(request.price()),
                 normalizeOptional(request.unit()),
                 normalizeOptional(request.location()),
-                ONLINE_STATUS,
-                REVIEW_APPROVED,
+                serviceStatus,
+                reviewStatus,
                 coverImage));
         serviceCatalogRepository.insertImages(serviceId, imageUrls);
         return serviceId;
@@ -220,9 +264,48 @@ public class ServiceCatalogService {
             throw new BusinessException(ErrorCode.SERVICE_CANNOT_ONLINE,
                     "only offline or rejected services can be put online");
         }
-        if (!serviceCatalogRepository.updateServiceStatus(serviceId, ONLINE_STATUS, REVIEW_APPROVED)) {
+        boolean reviewRequired = serviceReviewModeRepository.requiresReview() && !isAdmin(user);
+        int targetStatus = reviewRequired ? REVIEWING_STATUS : ONLINE_STATUS;
+        int targetReviewStatus = reviewRequired ? REVIEW_PENDING : REVIEW_APPROVED;
+        if (!serviceCatalogRepository.updateServiceStatus(serviceId, targetStatus, targetReviewStatus)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "service online failed");
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ServiceReviewDecisionResponse reviewService(AdminServiceReviewRequest request) {
+        LoginUserContext admin = requireAdmin();
+        if (request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "request must not be null");
+        }
+        if (request.serviceId() == null || request.serviceId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "serviceId must be positive");
+        }
+        if (request.approved() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "approved must not be null");
+        }
+
+        ServiceItem service = serviceCatalogRepository.findById(request.serviceId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SERVICE_NOT_EXIST));
+        if (!Integer.valueOf(REVIEWING_STATUS).equals(service.status())
+                || !Integer.valueOf(REVIEW_PENDING).equals(service.reviewStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "service review already handled");
+        }
+
+        boolean approved = request.approved();
+        int status = approved ? ONLINE_STATUS : REJECTED_STATUS;
+        int reviewStatus = approved ? REVIEW_APPROVED : REVIEW_REJECTED;
+        String reason = normalizeOptional(request.reason());
+        if (!serviceCatalogRepository.updateServiceReview(service.id(), status, reviewStatus, reason, admin.userId())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "service review failed");
+        }
+
+        publishServiceReviewNotification(service, approved, reason);
+        return new ServiceReviewDecisionResponse(
+                service.id(),
+                approved ? "approved" : "rejected",
+                status,
+                reviewStatus);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -297,12 +380,38 @@ public class ServiceCatalogService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_LOGIN, "login required"));
     }
 
+    private LoginUserContext requireAdmin() {
+        LoginUserContext user = requireCurrentUser();
+        if (!isAdmin(user)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "admin role required");
+        }
+        return user;
+    }
+
     private boolean isAdmin(LoginUserContext user) {
         return Integer.valueOf(ADMIN_ROLE).equals(user.role());
     }
 
     private boolean canPublish(LoginUserContext user) {
         return isAdmin(user) || Integer.valueOf(HAS_PUBLISH_PERMISSION).equals(user.publishPermission());
+    }
+
+    private void publishServiceReviewNotification(ServiceItem service, boolean approved, String reason) {
+        if (approved) {
+            notificationPublisher.publishServiceReviewNotification(
+                    service.publisherId(),
+                    service.id(),
+                    "服务审核通过",
+                    "你发布的服务「" + service.title() + "」已审核通过并上架。");
+            return;
+        }
+
+        String suffix = reason == null ? "" : "原因：" + reason;
+        notificationPublisher.publishServiceReviewNotification(
+                service.publisherId(),
+                service.id(),
+                "服务审核未通过",
+                "你发布的服务「" + service.title() + "」审核未通过。" + suffix);
     }
 
     private Integer statusOrOnline(Integer status) {

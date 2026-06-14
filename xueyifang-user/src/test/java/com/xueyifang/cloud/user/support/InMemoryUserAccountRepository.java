@@ -1,9 +1,12 @@
 package com.xueyifang.cloud.user.support;
 
 import com.xueyifang.cloud.user.repository.UserAccount;
+import com.xueyifang.cloud.user.repository.UserAccountPage;
 import com.xueyifang.cloud.user.repository.UserAccountRepository;
 import com.xueyifang.cloud.user.repository.UserProfileUpdateCommand;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +60,10 @@ public class InMemoryUserAccountRepository implements UserAccountRepository {
                 user.role(),
                 user.publishPermission(),
                 user.permissionReviewStatus(),
+                user.permissionApplyReason(),
+                user.permissionReviewReason(),
+                user.permissionReviewedBy(),
+                user.permissionReviewedAt(),
                 user.walletBalance(),
                 user.frozenAmount(),
                 user.status(),
@@ -90,6 +97,10 @@ public class InMemoryUserAccountRepository implements UserAccountRepository {
                 user.role(),
                 user.publishPermission(),
                 user.permissionReviewStatus(),
+                user.permissionApplyReason(),
+                user.permissionReviewReason(),
+                user.permissionReviewedBy(),
+                user.permissionReviewedAt(),
                 user.walletBalance(),
                 user.frozenAmount(),
                 user.status(),
@@ -100,7 +111,8 @@ public class InMemoryUserAccountRepository implements UserAccountRepository {
     }
 
     @Override
-    public boolean updatePermissionApplication(Long userId, int publishPermission, int permissionReviewStatus) {
+    public boolean updatePermissionApplication(Long userId, int publishPermission, int permissionReviewStatus,
+                                               String applyReason) {
         UserAccount user = users.get(userId);
         if (user == null) {
             return false;
@@ -123,6 +135,62 @@ public class InMemoryUserAccountRepository implements UserAccountRepository {
                 user.role(),
                 publishPermission,
                 permissionReviewStatus,
+                applyReason,
+                null,
+                null,
+                null,
+                user.walletBalance(),
+                user.frozenAmount(),
+                user.status(),
+                user.accountStatus(),
+                user.createTime(),
+                LocalDateTime.parse("2026-06-14T00:00:00")));
+        return true;
+    }
+
+    @Override
+    public UserAccountPage findPendingPermissionUsers(int offset, int limit) {
+        var matched = users.values().stream()
+                .filter(user -> Integer.valueOf(0).equals(user.permissionReviewStatus()))
+                .sorted(Comparator.comparing(UserAccount::updateTime)
+                        .thenComparing(UserAccount::id))
+                .toList();
+        var records = matched.stream()
+                .skip(offset)
+                .limit(limit)
+                .toList();
+        return new UserAccountPage(records, matched.size());
+    }
+
+    @Override
+    public boolean updatePermissionReview(Long userId, int publishPermission, int permissionReviewStatus,
+                                          String reviewReason, Long reviewedBy) {
+        UserAccount user = users.get(userId);
+        if (user == null || !Integer.valueOf(0).equals(user.permissionReviewStatus())) {
+            return false;
+        }
+
+        users.put(userId, new UserAccount(
+                user.id(),
+                user.username(),
+                user.password(),
+                user.studentId(),
+                user.realName(),
+                user.nickname(),
+                user.phone(),
+                user.email(),
+                user.dormitory(),
+                user.grade(),
+                user.professionalId(),
+                user.avatar(),
+                user.bio(),
+                user.role(),
+                publishPermission,
+                permissionReviewStatus,
+                user.permissionApplyReason(),
+                reviewReason,
+                reviewedBy,
+                LocalDateTime.parse("2026-06-14T00:00:00"),
                 user.walletBalance(),
                 user.frozenAmount(),
                 user.status(),

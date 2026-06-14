@@ -4,15 +4,21 @@ import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.context.LoginUserContext;
 import com.xueyifang.cloud.common.core.context.UserContextHolder;
 import com.xueyifang.cloud.common.core.exception.BusinessException;
+import com.xueyifang.cloud.service.dto.AdminServiceReviewRequest;
+import com.xueyifang.cloud.service.dto.PageResponse;
+import com.xueyifang.cloud.service.dto.PendingServiceReviewResponse;
 import com.xueyifang.cloud.service.dto.ServiceDetailResponse;
 import com.xueyifang.cloud.service.dto.ServiceListResponse;
 import com.xueyifang.cloud.service.dto.ServicePublishRequest;
+import com.xueyifang.cloud.service.dto.ServiceReviewDecisionResponse;
 import com.xueyifang.cloud.service.dto.ServiceTagResponse;
 import com.xueyifang.cloud.service.dto.ServiceUpdateRequest;
 import com.xueyifang.cloud.service.repository.ServiceImage;
 import com.xueyifang.cloud.service.repository.ServiceItem;
 import com.xueyifang.cloud.service.support.InMemoryServiceCatalogRepository;
 import com.xueyifang.cloud.service.support.InMemoryServiceInteractionRepository;
+import com.xueyifang.cloud.service.support.MutableServiceReviewModeRepository;
+import com.xueyifang.cloud.service.support.RecordingServiceNotificationPublisher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +37,23 @@ class ServiceCatalogServiceTest {
     private final InMemoryServiceInteractionRepository interactionRepository =
             new InMemoryServiceInteractionRepository(repository);
 
-    private final ServiceCatalogService serviceCatalogService = new ServiceCatalogService(repository, interactionRepository);
+    private final MutableServiceReviewModeRepository reviewModeRepository =
+            new MutableServiceReviewModeRepository(false);
+
+    private final RecordingServiceNotificationPublisher notificationPublisher =
+            new RecordingServiceNotificationPublisher();
+
+    private final ServiceCatalogService serviceCatalogService = new ServiceCatalogService(
+            repository,
+            interactionRepository,
+            reviewModeRepository,
+            notificationPublisher);
 
     @BeforeEach
     void setUp() {
         repository.putService(service(1L, 10L, "Java tutoring", 1, 1L));
         repository.putService(service(2L, 11L, "Dorm repair", 0, 2L));
+        repository.putService(service(3L, 12L, "Math tutoring", 2, 0, 1L));
         repository.putImage(new ServiceImage(1L, 1L, "cover.jpg", 0, true));
         repository.putImage(new ServiceImage(2L, 1L, "detail.jpg", 1, false));
         repository.putTag(1L, "study", 1, 1);
@@ -151,6 +168,18 @@ class ServiceCatalogServiceTest {
     }
 
     @Test
+    void publishesServiceAsReviewingWhenReviewModeEnabled() {
+        reviewModeRepository.setRequiresReview(true);
+        UserContextHolder.set(new LoginUserContext(10L, 1, 1));
+
+        Long serviceId = serviceCatalogService.publishService(publishRequest());
+        ServiceDetailResponse response = serviceCatalogService.getServiceDetail(serviceId);
+
+        assertThat(response.status()).isEqualTo(2);
+        assertThat(response.reviewStatus()).isZero();
+    }
+
+    @Test
     void rejectsPublishWithoutPermission() {
         UserContextHolder.set(new LoginUserContext(10L, 1, 0));
 
@@ -204,6 +233,54 @@ class ServiceCatalogServiceTest {
     }
 
     @Test
+    void resubmitsOfflineServiceForReviewWhenReviewModeEnabled() {
+        reviewModeRepository.setRequiresReview(true);
+        UserContextHolder.set(new LoginUserContext(11L, 1, 1));
+
+        serviceCatalogService.onlineService(2L);
+
+        ServiceDetailResponse response = serviceCatalogService.getServiceDetail(2L);
+        assertThat(response.status()).isEqualTo(2);
+        assertThat(response.reviewStatus()).isZero();
+    }
+
+    @Test
+    void listsPendingServicesForAdmin() {
+        UserContextHolder.set(new LoginUserContext(99L, 2, 1));
+
+        PageResponse<PendingServiceReviewResponse> page = serviceCatalogService.listPendingReviewServices(1, 10);
+
+        assertThat(page.total()).isEqualTo(1);
+        assertThat(page.records().getFirst().serviceId()).isEqualTo(3L);
+    }
+
+    @Test
+    void approvesPendingServiceAndPublishesNotification() {
+        UserContextHolder.set(new LoginUserContext(99L, 2, 1));
+
+        ServiceReviewDecisionResponse response = serviceCatalogService.reviewService(
+                new AdminServiceReviewRequest(3L, true, null));
+
+        assertThat(response.status()).isEqualTo("approved");
+        assertThat(serviceCatalogService.getServiceDetail(3L).status()).isEqualTo(1);
+        assertThat(notificationPublisher.notifications()).hasSize(1);
+        assertThat(notificationPublisher.notifications().getFirst().recipientId()).isEqualTo(12L);
+        assertThat(notificationPublisher.notifications().getFirst().serviceId()).isEqualTo(3L);
+    }
+
+    @Test
+    void rejectsPendingServiceWithReason() {
+        UserContextHolder.set(new LoginUserContext(99L, 2, 1));
+
+        ServiceReviewDecisionResponse response = serviceCatalogService.reviewService(
+                new AdminServiceReviewRequest(3L, false, "描述不清晰"));
+
+        assertThat(response.status()).isEqualTo("rejected");
+        assertThat(serviceCatalogService.getServiceDetail(3L).status()).isEqualTo(3);
+        assertThat(notificationPublisher.notifications().getFirst().content()).contains("描述不清晰");
+    }
+
+    @Test
     void rejectsStatusChangeByNonOwner() {
         UserContextHolder.set(new LoginUserContext(12L, 1, 1));
 
@@ -224,6 +301,11 @@ class ServiceCatalogServiceTest {
     }
 
     private ServiceItem service(Long id, Long publisherId, String title, Integer status, Long tagId) {
+        return service(id, publisherId, title, status, 1, tagId);
+    }
+
+    private ServiceItem service(Long id, Long publisherId, String title, Integer status,
+                                Integer reviewStatus, Long tagId) {
         return new ServiceItem(
                 id,
                 publisherId,
@@ -239,7 +321,7 @@ class ServiceCatalogServiceTest {
                 "hour",
                 "library",
                 status,
-                1,
+                reviewStatus,
                 0,
                 0,
                 BigDecimal.ZERO,

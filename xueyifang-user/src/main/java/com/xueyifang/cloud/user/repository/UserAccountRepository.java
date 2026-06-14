@@ -14,5 +14,11 @@ public interface UserAccountRepository {
 
     boolean updatePassword(Long userId, String password);
 
-    boolean updatePermissionApplication(Long userId, int publishPermission, int permissionReviewStatus);
+    boolean updatePermissionApplication(Long userId, int publishPermission, int permissionReviewStatus,
+                                        String applyReason);
+
+    UserAccountPage findPendingPermissionUsers(int offset, int limit);
+
+    boolean updatePermissionReview(Long userId, int publishPermission, int permissionReviewStatus,
+                                   String reviewReason, Long reviewedBy);
 }

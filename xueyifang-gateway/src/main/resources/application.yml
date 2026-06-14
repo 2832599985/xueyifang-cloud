@@ -37,11 +37,11 @@ spring:
         - id: xueyifang-user
           uri: lb://xueyifang-user
           predicates:
-            - Path=/users/**,/permission/**
+            - Path=/users/**,/permission/**,/admin/users/**,/admin/permission/**
         - id: xueyifang-service
           uri: lb://xueyifang-service
           predicates:
-            - Path=/service/**,/service-image/**,/favorite/**,/review/**
+            - Path=/service/**,/service-image/**,/favorite/**,/review/**,/admin/services/**
         - id: xueyifang-trade
           uri: lb://xueyifang-trade
           predicates:

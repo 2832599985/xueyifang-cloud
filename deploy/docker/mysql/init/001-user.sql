@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS `user` (
     `role` VARCHAR(20) NOT NULL DEFAULT 'STUDENT' COMMENT 'STUDENT/ADMIN',
     `publish_permission` TINYINT NOT NULL DEFAULT 1 COMMENT '0 no permission, 1 allowed',
     `permission_review_status` TINYINT NOT NULL DEFAULT 1 COMMENT '0 pending, 1 approved, 2 rejected',
+    `permission_apply_reason` VARCHAR(200) DEFAULT NULL COMMENT 'permission application reason',
+    `permission_review_reason` VARCHAR(200) DEFAULT NULL COMMENT 'permission review reason',
+    `permission_reviewed_by` BIGINT UNSIGNED DEFAULT NULL COMMENT 'permission reviewer admin user id',
+    `permission_reviewed_at` DATETIME(3) DEFAULT NULL COMMENT 'permission reviewed time',
     `wallet_balance` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT 'wallet balance',
     `frozen_amount` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT 'frozen amount',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '0 disabled, 1 active',
@@ -30,5 +34,6 @@ CREATE TABLE IF NOT EXISTS `user` (
     KEY `idx_user_email` (`email`),
     KEY `idx_user_role` (`role`),
     KEY `idx_user_publish_permission` (`publish_permission`),
+    KEY `idx_user_permission_review_status` (`permission_review_status`, `update_time`),
     KEY `idx_user_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='user';

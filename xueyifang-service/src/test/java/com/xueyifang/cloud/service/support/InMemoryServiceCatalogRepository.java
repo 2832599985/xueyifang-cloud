@@ -165,6 +165,40 @@ public class InMemoryServiceCatalogRepository implements ServiceCatalogRepositor
     }
 
     @Override
+    public boolean updateServiceReview(Long serviceId, int status, int reviewStatus, String reviewReason,
+                                       Long reviewedBy) {
+        ServiceItem service = services.get(serviceId);
+        if (service == null || !Integer.valueOf(2).equals(service.status())
+                || !Integer.valueOf(0).equals(service.reviewStatus())) {
+            return false;
+        }
+
+        services.put(serviceId, new ServiceItem(
+                service.id(),
+                service.publisherId(),
+                service.title(),
+                service.description(),
+                service.tagId(),
+                service.tagName(),
+                service.categoryId(),
+                service.categoryName(),
+                service.professionalId(),
+                service.professionalName(),
+                service.price(),
+                service.unit(),
+                service.location(),
+                status,
+                reviewStatus,
+                service.favoriteCount(),
+                service.orderCount(),
+                service.rating(),
+                service.coverImage(),
+                service.createTime(),
+                java.time.LocalDateTime.parse("2026-06-14T00:00:00")));
+        return true;
+    }
+
+    @Override
     public boolean updateCoverImage(Long serviceId, String coverImage) {
         ServiceItem service = services.get(serviceId);
         if (service == null) {
