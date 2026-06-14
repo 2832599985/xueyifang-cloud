@@ -235,6 +235,18 @@
 | `xueyifang-message/src/test/java/com/xueyifang/cloud/message/websocket/RedisBroadcastMessagePushServiceTest.java` | Redis 广播推送单元测试，覆盖本机投递、广播发布和 Redis 异常降级。 |
 | `xueyifang-message/src/test/java/com/xueyifang/cloud/message/websocket/RedisMessagePushSubscriberTest.java` | Redis 广播订阅单元测试，覆盖跨实例投递和本实例消息过滤。 |
 
+## 部署联调状态
+
+- GitHub 公开仓库：`https://github.com/2832599985/xueyifang-cloud`，当前 `master` 已推到 `origin/master`，最新提交为 `f301722 fix: wire auth token blacklist constructor`。
+- 当前旧前端 HTTP 调用点路径覆盖已到 `80/80`；核心缺口提交为 `fa7accf feat: complete legacy frontend api coverage`，包含后台统计、用户销售统计、后台用户导入、旧后台纠纷兼容和 Gateway 路由补齐。
+- 服务器 `hk_domain`（香港，约 2G 内存）已尝试部署：Docker、Java 21、MySQL/Redis/Nacos 和 JAR 上传均验证过；全套 8 个 Spring Boot 服务同时运行会明显吃 swap，不适合作为完整后端联调主机。临时应用进程和 `xueyifang` Compose 基础设施已停止，数据卷/部署目录保留在 `/home/ubuntu/xueyifang-cloud-deploy`。
+- 香港部署过程中发现并修复了 `xueyifang-auth` Spring 上下文启动问题：`RedisTokenBlacklistService` 的测试构造器导致 Spring 选择无参构造失败，已在 `f301722` 中通过 `@Autowired` 明确生产构造器。
+- 香港部署还确认了 Nacos 注意事项：当 Nacos 容器设置 `NACOS_AUTH_ENABLE=false` 时，应用环境变量不要再传 `NACOS_USERNAME=nacos` / `NACOS_PASSWORD=nacos`，否则 Nacos 3 客户端会尝试登录并报 `User nacos not found`。
+- 服务器 `aws_43_213_28_91`（台湾/台北 AWS，约 8G 内存）已确认更适合跑完整链路：Docker 和 Compose 可用，`sudo` 可用，防火墙 inactive；当前未安装 Java/Maven。本机已有服务占用宿主机 `3306` 和 `127.0.0.1:8080`，部署时需避开。
+- 台湾机建议端口规划：MySQL 暴露 `13306:3306`，Redis 暴露 `16379:6379`，Nacos 暴露 `18848:8848`、`19848:9848`、`19849:9849`；Gateway 使用 `18080`，业务服务继续使用 `8100` 到 `8700`。应用环境需同时设置 `XUEYIFANG_MYSQL_*` 和 `MYSQL_*`，因为不同模块当前读取的变量名不完全一致。
+- 下一步从台湾机继续：安装 Java 21，拉取 `origin/master` 的 `f301722`，使用独立部署目录启动基础设施和 8 个服务，等 Nacos 注册稳定后通过 `http://<server>:18080` 做注册、登录、字典、服务列表、统计和用户导入模板等 Gateway 冒烟。
+- 本地工作区仍有未纳入提交的 `AIREADME.md`、`.mcp-ssh.lock` 和 `.tmp-mcp-ssh-tests/`，不要清理或回滚这些与本轮部署无关的文件。
+
 ## Todo
 
 - 如需完整还原旧纠纷后台体验，补 `service_dispute.dispute_type` 持久化，并确认“处理但不退款”状态机语义。
