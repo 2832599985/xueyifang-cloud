@@ -20,7 +20,7 @@
 | 原项目分析 | 已完成 | 已拉取原后端、前端项目到仓库外参考目录，并输出初版盘点文档。 |
 | 阶段 3 横切基础 | 已完成 | 已迁移统一响应、错误码、业务异常、Servlet 全局异常处理和 requestId 日志上下文。 |
 | 阶段 4 认证与用户基础 | 进行中 | 已新增 JWT 公共能力、Gateway Bearer Token 校验、Auth 登录/注册/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请和后台权限审核通知回接。 |
-| 阶段 5 业务模块逐步迁移 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理、`REVIEW_MODE` 审核流、后台服务审核和互动链路；`xueyifang-trade` 已接入订单、退款、钱包、纠纷、订单定时任务和交易/纠纷通知回接；`xueyifang-system` 已接入专业、交易地点和系统配置；`xueyifang-file` 已接入本地文件上传、删除和查看；`xueyifang-message` 已接入聊天、通知、内部通知创建、单实例 WebSocket 和可选 Redis pub/sub 多实例广播。 |
+| 阶段 5 业务模块逐步迁移 | 进行中 | `xueyifang-service` 已接入服务浏览、发布者管理、`REVIEW_MODE` 审核流、后台服务审核和互动链路；`xueyifang-trade` 已接入订单、退款、钱包、纠纷、旧后台纠纷路径兼容、订单定时任务、用户销售统计和交易/纠纷通知回接；`xueyifang-system` 已接入专业、交易地点、系统配置和后台统计；`xueyifang-user` 已接入后台用户导入和模板下载；`xueyifang-file` 已接入本地文件上传、删除和查看；`xueyifang-message` 已接入聊天、通知、内部通知创建、单实例 WebSocket 和可选 Redis pub/sub 多实例广播；按原前端 80 个 HTTP 调用点口径已完成路径覆盖。 |
 
 ## 阶段计划
 
@@ -174,6 +174,11 @@
 - [x] 回接交易和纠纷通知生产动作，支持订单、退款和纠纷关键状态通过消息服务内部接口创建通知。
 - [x] 服务发布和重新上架接入 `sys_config.REVIEW_MODE`，新增后台服务待审列表和审核接口，并在审核结果产生后回接消息服务通知。
 - [x] 为 `xueyifang-message` 新增可选 Redis pub/sub WebSocket 多实例广播，默认关闭，启用后跨实例转发聊天和通知实时消息。
+- [x] 输出 `docs/original-api-comparison.md`，以原前端 80 个 HTTP 调用点为口径量化新云端覆盖情况。
+- [x] 补齐旧后台纠纷 `/admin/dispute/**` 兼容路径、旧请求字段和旧响应字段别名，并在 Gateway 转发到交易服务。
+- [x] 补齐后台统计 `/admin/statistics` 和 `/admin/statistics/trend`，由 `xueyifang-system` 聚合用户、服务、订单和纠纷表。
+- [x] 补齐用户销售统计 `/statistics/sales`，由 `xueyifang-trade` 基于当前卖家的已完成订单返回销量、收入、最畅销服务和最近订单。
+- [x] 补齐后台用户导入 `/admin/user-import/upload` 和模板下载 `/admin/user-import/template`，支持 CSV/Excel、账号查重、专业校验和 BCrypt 密码入库。
 
 验收标准：
 
@@ -222,10 +227,12 @@
 | 2026-06-14 | 阶段 5 | 进行中 | 回接交易和纠纷通知生产动作：消息服务新增内部通知创建接口，交易服务在订单、退款和纠纷关键状态提交后调用消息服务创建通知。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-service` 接入 `REVIEW_MODE` 审核流，新增 `/admin/services/pending` 和 `/admin/services/service/review`，并回接服务审核通知；执行 `mvn -pl xueyifang-user,xueyifang-service -am test` 通过。 |
 | 2026-06-14 | 阶段 5 | 进行中 | 在 `xueyifang-message` 接入可选 Redis pub/sub WebSocket 多实例广播，默认保持本机推送；执行 `mvn -pl xueyifang-message -am test` 通过。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 输出 `docs/original-api-comparison.md` 原前端调用点对照清单，量化剩余缺口为统计和用户导入；补齐旧后台纠纷 `/admin/dispute/**` 兼容路径、旧请求/响应字段兼容和 Gateway 路由；执行 `mvn -pl xueyifang-trade -am test` 通过。 |
+| 2026-06-14 | 阶段 5 | 进行中 | 补齐剩余统计和用户导入硬缺口：`/admin/statistics`、`/admin/statistics/trend`、`/statistics/sales`、`/admin/user-import/upload` 和 `/admin/user-import/template`，并补充 Gateway 路由；执行 `mvn -pl xueyifang-user,xueyifang-system,xueyifang-trade -am test` 和 `mvn -pl xueyifang-gateway -am test` 通过。 |
 
 ## 待确认事项
 
 - 是否使用 Nacos 作为注册中心和配置中心。按国内 Spring Cloud Alibaba 项目经验，Nacos 是合理默认值。
-- 第一批迁移已采用“认证、用户、服务列表、订单最短链路、系统字典、文件能力、消息能力”的顺序；交易、纠纷、权限审核和服务审核通知已回接，后续优先做本地联通验证。
+- 第一批迁移已采用“认证、用户、服务列表、订单最短链路、系统字典、文件能力、消息能力”的顺序；交易、纠纷、权限审核、服务审核通知、统计和用户导入已回接，旧前端调用点路径层面已覆盖 80/80，后续优先做本地全链路启动、旧前端冒烟和生产配置收尾。
 - 消息服务已拆出，并提供可选 Redis pub/sub 多实例广播；多实例上线前需要补联调压测，并按可靠性要求评估消息队列、离线补偿或网关粘性会话。
 - Nacos 生产环境鉴权和外置数据库方案。

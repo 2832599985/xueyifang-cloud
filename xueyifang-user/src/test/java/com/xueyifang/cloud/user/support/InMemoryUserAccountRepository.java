@@ -3,20 +3,31 @@ package com.xueyifang.cloud.user.support;
 import com.xueyifang.cloud.user.repository.UserAccount;
 import com.xueyifang.cloud.user.repository.UserAccountPage;
 import com.xueyifang.cloud.user.repository.UserAccountRepository;
+import com.xueyifang.cloud.user.repository.UserImportCreateCommand;
 import com.xueyifang.cloud.user.repository.UserProfileUpdateCommand;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class InMemoryUserAccountRepository implements UserAccountRepository {
 
     private final Map<Long, UserAccount> users = new HashMap<>();
 
+    private final Set<Long> professionalIds = new HashSet<>();
+
     public void put(UserAccount user) {
         users.put(user.id(), user);
+    }
+
+    public void putProfessionalId(Long professionalId) {
+        professionalIds.add(professionalId);
     }
 
     @Override
@@ -200,7 +211,66 @@ public class InMemoryUserAccountRepository implements UserAccountRepository {
         return true;
     }
 
+    @Override
+    public Set<String> findExistingStudentIds() {
+        return users.values().stream()
+                .map(UserAccount::studentId)
+                .filter(studentId -> studentId != null && !studentId.isBlank())
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<String> findExistingUsernames() {
+        return users.values().stream()
+                .map(UserAccount::username)
+                .filter(username -> username != null && !username.isBlank())
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Long> findActiveProfessionalIds() {
+        return Set.copyOf(professionalIds);
+    }
+
+    @Override
+    public Long createImportedUser(UserImportCreateCommand command) {
+        Long id = users.keySet().stream().max(Long::compareTo).orElse(0L) + 1;
+        LocalDateTime now = LocalDateTime.parse("2026-06-14T00:00:00").plusSeconds(id);
+        users.put(id, new UserAccount(
+                id,
+                command.username(),
+                command.password(),
+                command.studentId(),
+                command.realName(),
+                command.nickname(),
+                command.phone(),
+                command.email(),
+                command.dormitory(),
+                command.grade(),
+                command.professionalId(),
+                null,
+                null,
+                command.role(),
+                command.publishPermission(),
+                command.permissionReviewStatus(),
+                null,
+                null,
+                null,
+                null,
+                valueOrZero(command.walletBalance()),
+                valueOrZero(command.frozenAmount()),
+                command.status(),
+                command.accountStatus(),
+                now,
+                now));
+        return id;
+    }
+
     private String valueOrExisting(String value, String existing) {
         return value != null ? value : existing;
+    }
+
+    private BigDecimal valueOrZero(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 }

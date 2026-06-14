@@ -105,6 +105,10 @@ class TradeDisputeServiceTest {
         DisputeResponse detail = tradeDisputeService.getDisputeDetail(disputeId);
         assertThat(detail.buyerName()).isEqualTo("Buyer");
         assertThat(detail.sellerName()).isEqualTo("Seller");
+        assertThat(detail.disputeId()).isEqualTo(disputeId);
+        assertThat(detail.disputeInitiatorId()).isEqualTo(20L);
+        assertThat(detail.disputeStatus()).isEqualTo(1);
+        assertThat(detail.description()).isEqualTo("seller refused refund");
         assertThat(notificationPublisher.notifications()).anySatisfy(notification -> {
             assertThat(notification.notificationType()).isEqualTo(4);
             assertThat(notification.recipientId()).isEqualTo(10L);
@@ -138,6 +142,10 @@ class TradeDisputeServiceTest {
 
         DisputeListResponse handled = tradeDisputeService.listAdminDisputes(1, 10, 2);
         assertThat(handled.total()).isEqualTo(1);
+        DisputeResponse detailByOrder = tradeDisputeService.getDisputeDetailByOrderIdForAdmin(orderId);
+        assertThat(detailByOrder.disputeId()).isEqualTo(disputeId);
+        assertThat(detailByOrder.disputeStatus()).isEqualTo(3);
+        assertThat(detailByOrder.resolution()).isEqualTo("管理员支持买家退款");
         assertThat(orderRepository.logs()).extracting("actionType")
                 .contains("ADMIN_REFUND", "DISPUTE_REFUND");
         assertThat(notificationPublisher.notifications()).anySatisfy(notification -> {
@@ -187,6 +195,20 @@ class TradeDisputeServiceTest {
                 orderId, "not my order", null)))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(ErrorCode.NO_AUTH_ERROR.getCode()));
+    }
+
+    @Test
+    void acceptsLegacyDisputeRequestFields() {
+        Long orderId = createRejectedRefundOrder();
+
+        loginAsBuyer();
+        Long disputeId = tradeDisputeService.createDispute(new DisputeCreateRequest(
+                orderId, null, null, 2, "legacy description"));
+
+        DisputeResponse detail = tradeDisputeService.getDisputeDetail(disputeId);
+        assertThat(detail.reason()).isEqualTo("legacy description");
+        assertThat(detail.description()).isEqualTo("legacy description");
+        assertThat(detail.disputeType()).isEqualTo(4);
     }
 
     private Long createRejectedRefundOrder() {

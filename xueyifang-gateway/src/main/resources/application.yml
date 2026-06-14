@@ -37,7 +37,7 @@ spring:
         - id: xueyifang-user
           uri: lb://xueyifang-user
           predicates:
-            - Path=/users/**,/permission/**,/admin/users/**,/admin/permission/**
+            - Path=/users/**,/permission/**,/admin/users/**,/admin/permission/**,/admin/user-import/**
         - id: xueyifang-service
           uri: lb://xueyifang-service
           predicates:
@@ -45,11 +45,11 @@ spring:
         - id: xueyifang-trade
           uri: lb://xueyifang-trade
           predicates:
-            - Path=/order/**,/wallet/**,/dispute/**
+            - Path=/order/**,/wallet/**,/dispute/**,/admin/dispute/**,/statistics/**
         - id: xueyifang-system
           uri: lb://xueyifang-system
           predicates:
-            - Path=/professional/**,/trade-location/**,/sys-config/**,/admin/professional/**,/admin/trade-location/**,/admin/sys-config/**
+            - Path=/professional/**,/trade-location/**,/sys-config/**,/admin/professional/**,/admin/trade-location/**,/admin/sys-config/**,/admin/statistics,/admin/statistics/**
         - id: xueyifang-file-api-compat
           uri: lb://xueyifang-file
           predicates:

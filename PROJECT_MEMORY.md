@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典、文件能力和消息能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请、后台发布权限审核和通知回接，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、`REVIEW_MODE` 审核流、后台服务审核、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现和交易/纠纷通知回接，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口，`xueyifang-message` 已提供聊天、通知、内部通知创建、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典、文件能力和消息能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请、后台发布权限审核、后台用户导入和通知回接，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、`REVIEW_MODE` 审核流、后台服务审核、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、旧后台纠纷路径兼容、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现、用户销售统计和交易/纠纷通知回接，`xueyifang-system` 已提供专业、交易地点、注册开关、后台系统配置维护和后台统计接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口，`xueyifang-message` 已提供聊天、通知、内部通知创建、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播；按原前端 80 个 HTTP 调用点口径已完成路径覆盖，后续进入本地联调和上线工程化收尾。
 
 ## 根目录索引
 
@@ -37,6 +37,7 @@
 | `docs/system-api-contract.md` | 文档 | 阶段 5 系统字典与配置接口契约，记录专业、交易地点和系统配置接口。 |
 | `docs/file-api-contract.md` | 文档 | 阶段 5 文件服务接口契约，记录上传、批量上传、删除、查看和网关兼容路径。 |
 | `docs/message-api-contract.md` | 文档 | 阶段 5 消息服务接口契约，记录聊天、通知、内部通知创建、WebSocket、Redis 广播和通知回接策略。 |
+| `docs/original-api-comparison.md` | 文档 | 原前端调用点、原后端接口和新云端接口对照清单，记录 80/80 路径覆盖和后续联调风险。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
@@ -64,10 +65,10 @@
 | `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；自动装配统一异常处理、requestId 过滤器和用户上下文过滤器。 |
 | `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前使用 Nacos 服务发现和 `lb://` 路由，并生成或透传 `X-Request-Id`，校验 Bearer Token、拒绝黑名单 Token 后透传可信用户上下文。 |
 | `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、注册开关、Token 刷新、退出登录、Redis Token 黑名单，并按 `user.publish_permission` 签发权限声明。 |
-| `xueyifang-user` | 已创建 | 用户服务，当前包含当前用户、资料更新、改密、发布权限申请/状态、后台发布权限审核、审核通知回接和旧 `/auth/*` 资料路径兼容接口。 |
+| `xueyifang-user` | 已创建 | 用户服务，当前包含当前用户、资料更新、改密、发布权限申请/状态、后台发布权限审核、后台用户导入、审核通知回接和旧 `/auth/*` 资料路径兼容接口。 |
 | `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、服务列表、服务详情、标签读取、发布、我的服务、编辑、上下架、逻辑删除、`REVIEW_MODE` 审核流、后台服务审核、审核通知回接、收藏、我的收藏、评价创建、评价列表和订单评价状态接口。 |
-| `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现接口和交易/纠纷通知回接。 |
-| `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关和后台系统配置维护接口。 |
+| `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、旧后台纠纷路径兼容、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现、用户销售统计接口和交易/纠纷通知回接。 |
+| `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关、后台系统配置维护和后台统计接口。 |
 | `xueyifang-file` | 已创建 | 文件服务，当前包含 Spring Boot 启动类、本地存储配置、单文件上传、批量上传、删除和公开查看接口，并通过网关兼容 `/api/file/**`。 |
 | `xueyifang-message` | 已创建 | 消息服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、聊天发送、聊天记录、会话列表、通知列表、未读数、标记已读、内部通知创建、`/api/ws` 单实例 WebSocket 兼容入口和可选 Redis pub/sub 多实例广播。 |
 
@@ -114,15 +115,17 @@
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/service/AuthTokenService.java` | Token 刷新和退出登录黑名单业务逻辑。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/token/RedisTokenBlacklistService.java` | Auth 服务 Redis Token 黑名单写入和查询实现。 |
 | `xueyifang-auth/src/main/resources/application.yml` | 认证服务端口、服务名、Nacos、MySQL、Redis 和 JWT 配置。 |
-| `xueyifang-user/pom.xml` | 用户服务 POM，依赖公共 Web、JDBC、MySQL 和 BCrypt。 |
+| `xueyifang-user/pom.xml` | 用户服务 POM，依赖公共 Web、JDBC、MySQL、BCrypt、Apache POI 和 Commons CSV。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/XueyifangUserApplication.java` | 用户服务启动类。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/UserProfileController.java` | 用户资料新接口，提供 `/users/me`、`/users/me/profile` 和 `/users/me/password`。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/AuthUserCompatibilityController.java` | 旧 `/auth/currentUser`、`/auth/updateProfile` 和 `/auth/changePassword` 兼容入口。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/PermissionController.java` | 发布权限申请和状态查询入口。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/AdminPermissionController.java` | 后台发布权限审核入口，兼容 `/admin/users/pending` 和 `/admin/permission/review`。 |
-| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/repository/JdbcUserAccountRepository.java` | 基于 `JdbcTemplate` 的 `user` 表资料、发布权限申请和后台审核数据访问。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/controller/AdminUserImportController.java` | 后台用户导入入口，提供 `/admin/user-import/upload` 和 `/admin/user-import/template`。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/repository/JdbcUserAccountRepository.java` | 基于 `JdbcTemplate` 的 `user` 表资料、发布权限申请、后台审核和导入查重/创建数据访问。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/service/UserProfileService.java` | 当前用户资料、资料更新、改密和发布权限状态业务逻辑。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/service/AdminPermissionService.java` | 后台发布权限待审列表、通过/驳回和审核通知触发业务逻辑。 |
+| `xueyifang-user/src/main/java/com/xueyifang/cloud/user/service/UserImportService.java` | 后台用户导入业务逻辑，解析 CSV/Excel、校验专业/账号、使用 BCrypt 密码入库并生成模板。 |
 | `xueyifang-user/src/main/java/com/xueyifang/cloud/user/notification/HttpUserNotificationPublisher.java` | 用户服务审核通知发布实现，事务提交后调用消息服务内部通知接口。 |
 | `xueyifang-user/src/main/resources/application.yml` | 用户服务端口、服务名、Nacos、MySQL 和审核通知配置。 |
 | `xueyifang-service/pom.xml` | 服务市场 POM，依赖公共 Web、JDBC 和 MySQL。 |
@@ -152,11 +155,15 @@
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/config/TradeOrderTaskProperties.java` | 订单定时任务配置，包含开关、批量大小、超时时间和 cron 表达式。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/controller/OrderController.java` | 订单入口，提供创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、买卖家列表和详情接口。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/controller/DisputeController.java` | 纠纷入口，提供买家发起纠纷、双方查询、管理员列表和管理员处理接口。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/controller/AdminDisputeCompatibilityController.java` | 旧后台纠纷兼容入口，提供 `/admin/dispute/list`、详情、按订单查纠纷和处理纠纷旧路径。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/controller/WalletController.java` | 钱包入口，提供钱包余额、钱包流水、充值和提现接口。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/controller/StatisticsController.java` | 用户销售统计入口，提供旧前端 `/statistics/sales`。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/OrderCreateRequest.java` | 创建订单请求。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/OrderPayRequest.java` | 支付订单请求。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/OrderRefundRequest.java` | 买家退款申请请求。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/SellerHandleRefundRequest.java` | 卖家处理退款申请请求。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/DisputeCreateRequest.java` | 纠纷创建请求，兼容旧前端 `description` 字段。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/DisputeHandleRequest.java` | 纠纷处理请求，兼容新字段 `approveRefund`/`handleRemark` 和旧字段 `actionType`/`adminReply`/`resolution`/`needRefund`。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/OrderListResponse.java` | 订单分页列表响应。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/OrderDetailResponse.java` | 订单详情响应。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/WalletBalanceResponse.java` | 钱包余额响应，包含可用余额、冻结金额和总资产。 |
@@ -166,8 +173,8 @@
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/dto/WalletWithdrawRequest.java` | 钱包提现请求。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/notification/TradeNotificationPublisher.java` | 交易通知发布端口，隔离交易业务和消息服务实现。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/notification/HttpTradeNotificationPublisher.java` | HTTP 通知发布实现，事务提交后调用消息服务内部通知接口，失败仅记录日志。 |
-| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/TradeOrderRepository.java` | 订单、用户钱包、服务快照、订单日志、钱包流水和订单任务候选数据访问接口。 |
-| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/JdbcTradeOrderRepository.java` | 基于 `JdbcTemplate` 的交易数据访问实现，包含订单任务候选查询。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/TradeOrderRepository.java` | 订单、用户钱包、服务快照、销售统计、订单日志、钱包流水和订单任务候选数据访问接口。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/JdbcTradeOrderRepository.java` | 基于 `JdbcTemplate` 的交易数据访问实现，包含销售统计和订单任务候选查询。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/TradeDisputeRepository.java` | 纠纷数据访问接口，支持一单一纠纷和待处理纠纷检查。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/JdbcTradeDisputeRepository.java` | 基于 `JdbcTemplate` 的纠纷数据访问实现。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/repository/WalletTransactionItem.java` | 钱包流水查询记录快照。 |
@@ -177,6 +184,7 @@
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/service/TradeDisputeService.java` | 纠纷发起、查询、管理员裁决和纠纷通知触发业务逻辑。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/service/TradeOrderTaskService.java` | 订单定时任务批处理服务，扫描超时订单并逐单触发系统动作。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/service/TradeWalletService.java` | 钱包余额、流水查询、充值和提现业务逻辑。 |
+| `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/service/TradeStatisticsService.java` | 当前卖家销售统计业务逻辑，返回销量、收入、平均客单价、最畅销服务和最近订单。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/task/TradeOrderTaskScheduler.java` | 订单定时任务调度入口，触发自动取消、自动确认收货和自动退款。 |
 | `xueyifang-trade/src/main/resources/application.yml` | 交易服务端口、服务名、Nacos、MySQL 和订单定时任务配置。 |
 | `xueyifang-system/pom.xml` | 系统服务 POM，依赖公共 Web、JDBC、MySQL、Actuator 和 Nacos。 |
@@ -187,9 +195,13 @@
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminProfessionalController.java` | 后台专业管理入口。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminTradeLocationController.java` | 后台交易地点管理入口。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminSysConfigController.java` | 后台系统配置管理入口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminStatisticsController.java` | 后台统计入口，提供 `/admin/statistics` 和 `/admin/statistics/trend`。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/SystemDictionaryRepository.java` | 专业、交易地点和系统配置数据访问接口。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/JdbcSystemDictionaryRepository.java` | 基于 `JdbcTemplate` 的系统字典和配置数据访问实现。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/SystemStatisticsRepository.java` | 后台统计所需的用户、服务、订单、纠纷聚合查询接口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/JdbcSystemStatisticsRepository.java` | 基于 `JdbcTemplate` 的后台统计聚合查询实现。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/service/SystemDictionaryService.java` | 系统字典公开读取、管理员维护、注册开关和配置查询业务逻辑。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/service/AdminStatisticsService.java` | 后台系统概览和近 7 天趋势统计业务逻辑。 |
 | `xueyifang-system/src/main/resources/application.yml` | 系统服务端口、服务名、Nacos 和 MySQL 配置。 |
 | `xueyifang-file/pom.xml` | 文件服务 POM，依赖公共 Web、Spring MVC、Actuator 和 Nacos。 |
 | `xueyifang-file/src/main/java/com/xueyifang/cloud/file/XueyifangFileApplication.java` | 文件服务启动类。 |
@@ -225,7 +237,9 @@
 
 ## Todo
 
+- 如需完整还原旧纠纷后台体验，补 `service_dispute.dispute_type` 持久化，并确认“处理但不退款”状态机语义。
+- 做一次本地全链路启动验证，覆盖 Gateway 到认证、用户、服务、交易、系统、文件和消息服务的健康检查。
+- 使用旧前端做冒烟，重点跑登录、服务浏览、下单、退款/纠纷、统计、用户导入、通知和文件上传。
 - 资金规则复杂后再评估是否拆出钱包服务。
 - 多实例部署 `xueyifang-message` 前，基于已接入 Redis pub/sub 做联调压测，并按可靠性要求评估消息队列、离线补偿或网关粘性会话。
-- 启动本地 Nacos 后，做一次网关到各业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。

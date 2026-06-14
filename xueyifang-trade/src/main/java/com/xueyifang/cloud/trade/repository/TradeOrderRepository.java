@@ -23,6 +23,12 @@ public interface TradeOrderRepository {
 
     OrderPage findOrders(OrderListQuery query);
 
+    SellerSalesSummary summarizeCompletedSalesBySeller(Long sellerId);
+
+    Optional<BestSellingService> findBestSellingServiceBySeller(Long sellerId);
+
+    List<RecentSalesOrder> findRecentCompletedSalesBySeller(Long sellerId, int limit);
+
     List<Long> findUnpaidOrderIdsCreatedAtOrBefore(LocalDateTime deadline, int limit);
 
     List<Long> findPendingReceiptOrderIdsShippedAtOrBefore(LocalDateTime deadline, int limit);

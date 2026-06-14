@@ -76,7 +76,7 @@ public class TradeDisputeService {
         }
         LoginUserContext user = requireCurrentUser();
         Long orderId = requirePositiveId(request.orderId(), "orderId");
-        String reason = requireText(request.reason(), "reason");
+        String reason = requireText(request.effectiveReason(), "reason");
 
         TradeOrder order = tradeOrderRepository.findOrderForUpdate(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_EXIST));
@@ -147,11 +147,23 @@ public class TradeDisputeService {
         return DisputeResponse.from(dispute);
     }
 
+    public DisputeResponse getDisputeDetailByOrderIdForAdmin(Long orderId) {
+        LoginUserContext user = requireCurrentUser();
+        if (!isAdmin(user)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only admin can view disputes by order");
+        }
+        return tradeDisputeRepository.findByOrderId(requirePositiveId(orderId, "orderId"))
+                .map(DisputeResponse::from)
+                .orElse(null);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void handleDispute(Long disputeId, DisputeHandleRequest request) {
-        if (request == null || request.approveRefund() == null) {
+        if (request == null || request.effectiveApproveRefund() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "approveRefund is required");
         }
+        Boolean approveRefund = request.effectiveApproveRefund();
+        String effectiveHandleRemark = request.effectiveHandleRemark();
         LoginUserContext user = requireCurrentUser();
         if (!isAdmin(user)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "only admin can handle disputes");
@@ -163,8 +175,8 @@ public class TradeDisputeService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        if (Boolean.TRUE.equals(request.approveRefund())) {
-            String remark = firstNonBlank(normalizeOptional(request.handleRemark()), "管理员支持买家，已退款");
+        if (Boolean.TRUE.equals(approveRefund)) {
+            String remark = firstNonBlank(normalizeOptional(effectiveHandleRemark), "管理员支持买家，已退款");
             tradeOrderService.adminRefundOrder(dispute.orderId(), "纠纷处理退款：" + remark);
             if (!tradeDisputeRepository.handleDispute(new DisputeHandleCommand(
                     dispute.id(), DISPUTE_REFUNDED, "REFUND_APPROVED", remark, user.userId(), now))) {
@@ -179,7 +191,7 @@ public class TradeDisputeService {
             return;
         }
 
-        String remark = requireText(request.handleRemark(), "handleRemark");
+        String remark = requireText(effectiveHandleRemark, "handleRemark");
         if (!tradeDisputeRepository.handleDispute(new DisputeHandleCommand(
                 dispute.id(), DISPUTE_REJECTED, "REJECTED", remark, user.userId(), now))) {
             throw new BusinessException(ErrorCode.DISPUTE_STATUS_ERROR, "dispute status changed");

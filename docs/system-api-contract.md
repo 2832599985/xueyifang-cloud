@@ -1,6 +1,6 @@
 # 系统字典与配置接口契约
 
-本契约覆盖阶段 5 新增的 `xueyifang-system`：专业字典、交易地点字典和系统配置读取。公开接口保持旧前端路径，管理员接口保留旧后台路径。
+本契约覆盖阶段 5 新增的 `xueyifang-system`：专业字典、交易地点字典、系统配置读取和后台统计。公开接口保持旧前端路径，管理员接口保留旧后台路径。
 
 ## 接口总览
 
@@ -32,6 +32,8 @@
 | `GET` | `/admin/sys-config/{id}` | 后台查询配置详情。 | 管理员 |
 | `GET` | `/admin/sys-config/key-values` | 后台按 key 批量读取启用配置值。 | 管理员 |
 | `PUT` | `/admin/sys-config/update` | 后台更新配置值、描述或启用状态。 | 管理员 |
+| `GET` | `/admin/statistics` | 后台首页系统统计，聚合用户、服务、订单和待处理纠纷。 | 管理员 |
+| `GET` | `/admin/statistics/trend` | 后台近 7 天订单、服务和交易金额趋势。 | 管理员 |
 
 管理员由 Gateway 透传的 `X-User-Role=2` 判定。公开接口已在网关白名单中放行。
 
@@ -79,6 +81,8 @@
 ```
 
 分页响应统一返回 `records`、`total`、`current`、`pageNum`、`pageSize` 和 `pages`。
+
+后台统计响应保留旧前端字段：`totalUsers`、`activeUsers`、`totalServices`、`totalOrders`、`completedOrders`、`pendingDisputes`、`totalTransactionAmount`、`todayNewUsers`、`todayNewServices` 和 `todayNewOrders`。趋势响应返回 `dates`、`orderCounts`、`serviceCounts` 和 `transactionAmounts`。
 
 ## 数据表
 

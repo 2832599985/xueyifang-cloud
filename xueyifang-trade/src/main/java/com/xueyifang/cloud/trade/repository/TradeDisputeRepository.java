@@ -10,6 +10,8 @@ public interface TradeDisputeRepository {
 
     Optional<TradeDispute> findByIdForUpdate(Long disputeId);
 
+    Optional<TradeDispute> findByOrderId(Long orderId);
+
     DisputePage findDisputes(DisputeListQuery query);
 
     boolean existsByOrderId(Long orderId);

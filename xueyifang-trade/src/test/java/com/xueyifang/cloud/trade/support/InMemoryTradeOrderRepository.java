@@ -4,6 +4,9 @@ import com.xueyifang.cloud.trade.repository.OrderCreateCommand;
 import com.xueyifang.cloud.trade.repository.OrderListQuery;
 import com.xueyifang.cloud.trade.repository.OrderLogCommand;
 import com.xueyifang.cloud.trade.repository.OrderPage;
+import com.xueyifang.cloud.trade.repository.BestSellingService;
+import com.xueyifang.cloud.trade.repository.RecentSalesOrder;
+import com.xueyifang.cloud.trade.repository.SellerSalesSummary;
 import com.xueyifang.cloud.trade.repository.TradeOrder;
 import com.xueyifang.cloud.trade.repository.TradeOrderRepository;
 import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
@@ -203,6 +206,52 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
                 .limit(query.limit())
                 .toList();
         return new OrderPage(records, matched.size());
+    }
+
+    @Override
+    public SellerSalesSummary summarizeCompletedSalesBySeller(Long sellerId) {
+        List<TradeOrder> matched = completedSalesBySeller(sellerId);
+        BigDecimal totalRevenue = matched.stream()
+                .map(TradeOrder::totalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new SellerSalesSummary(matched.size(), totalRevenue);
+    }
+
+    @Override
+    public Optional<BestSellingService> findBestSellingServiceBySeller(Long sellerId) {
+        return completedSalesBySeller(sellerId).stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        TradeOrder::serviceId,
+                        java.util.stream.Collectors.toList()))
+                .values()
+                .stream()
+                .map(serviceOrders -> {
+                    TradeOrder first = serviceOrders.getFirst();
+                    BigDecimal revenue = serviceOrders.stream()
+                            .map(TradeOrder::totalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    return new BestSellingService(
+                            first.serviceId(),
+                            first.serviceTitle(),
+                            serviceOrders.size(),
+                            revenue);
+                })
+                .max(Comparator.comparing(BestSellingService::sales)
+                        .thenComparing(BestSellingService::revenue));
+    }
+
+    @Override
+    public List<RecentSalesOrder> findRecentCompletedSalesBySeller(Long sellerId, int limit) {
+        return completedSalesBySeller(sellerId).stream()
+                .sorted(Comparator.comparing(TradeOrder::createTime).reversed()
+                        .thenComparing(TradeOrder::id, Comparator.reverseOrder()))
+                .limit(limit)
+                .map(order -> new RecentSalesOrder(
+                        order.id(),
+                        order.orderNumber(),
+                        order.totalAmount(),
+                        order.createTime()))
+                .toList();
     }
 
     @Override
@@ -434,5 +483,12 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
                 order.sellerName(),
                 order.sellerAvatar(),
                 order.isReviewed());
+    }
+
+    private List<TradeOrder> completedSalesBySeller(Long sellerId) {
+        return orders.values().stream()
+                .filter(order -> sellerId.equals(order.sellerId()))
+                .filter(order -> Integer.valueOf(4).equals(order.orderStatus()))
+                .toList();
     }
 }

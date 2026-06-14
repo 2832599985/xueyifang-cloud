@@ -63,6 +63,14 @@ public class InMemoryTradeDisputeRepository implements TradeDisputeRepository {
     }
 
     @Override
+    public Optional<TradeDispute> findByOrderId(Long orderId) {
+        return disputes.values().stream()
+                .filter(dispute -> orderId.equals(dispute.orderId()))
+                .findFirst()
+                .map(this::mapDispute);
+    }
+
+    @Override
     public DisputePage findDisputes(DisputeListQuery query) {
         List<TradeDispute> matched = disputes.values().stream()
                 .filter(dispute -> query.admin()

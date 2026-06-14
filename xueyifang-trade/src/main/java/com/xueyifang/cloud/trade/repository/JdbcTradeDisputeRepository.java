@@ -85,6 +85,14 @@ public class JdbcTradeDisputeRepository implements TradeDisputeRepository {
     }
 
     @Override
+    public Optional<TradeDispute> findByOrderId(Long orderId) {
+        return jdbcTemplate.query(
+                DISPUTE_SELECT + " WHERE d.order_id = ? AND d.is_deleted = 0 LIMIT 1",
+                ps -> ps.setLong(1, orderId),
+                rs -> rs.next() ? Optional.of(mapDispute(rs)) : Optional.empty());
+    }
+
+    @Override
     public DisputePage findDisputes(DisputeListQuery query) {
         List<Object> parameters = new ArrayList<>();
         String whereClause = buildDisputeWhere(query, parameters);

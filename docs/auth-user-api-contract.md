@@ -32,8 +32,12 @@
 | `POST` | `/permission/apply` | 无 | 提交发布权限申请。已拥有权限时直接返回 `approved`。 |
 | `GET` | `/admin/users/pending` | 无 | 管理员分页查询待审核发布权限申请。 |
 | `PUT` | `/admin/permission/review` | `{ "userId": 1, "approved": true, "reason": "" }` | 管理员审核发布权限申请，通过后授予发布权限，拒绝后记录原因。 |
+| `POST` | `/admin/user-import/upload` | 无 | 管理员批量导入用户，支持 CSV、XLS 和 XLSX。导入密码使用 BCrypt 入库。 |
+| `GET` | `/admin/user-import/template` | 无 | 管理员下载用户导入模板，默认 XLSX，`format=csv` 返回 CSV。 |
 
-网关把 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword`、`/users/**`、`/permission/**`、`/admin/users/**` 和 `/admin/permission/**` 路由到 `xueyifang-user`，其余 `/auth/**` 仍路由到 `xueyifang-auth`。
+网关把 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword`、`/users/**`、`/permission/**`、`/admin/users/**`、`/admin/permission/**` 和 `/admin/user-import/**` 路由到 `xueyifang-user`，其余 `/auth/**` 仍路由到 `xueyifang-auth`。
+
+用户导入返回 `totalCount`、`successCount`、`skippedCount`、`failedCount` 和 `failedRows`。每行按学号/用户名查重，专业 ID 必须存在于未删除专业表；管理员导入的用户默认拥有发布权限。
 
 ## 用户资料字段
 

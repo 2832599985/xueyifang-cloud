@@ -2,7 +2,7 @@
 
 ## 当前范围
 
-本契约覆盖阶段 5 交易链路：创建订单、支付订单、取消订单、卖家发货、买家确认完成、订单查询、退款申请、卖家处理退款、纠纷发起、纠纷查询、管理员纠纷处理、订单超时任务、钱包余额、钱包流水、充值和提现。
+本契约覆盖阶段 5 交易链路：创建订单、支付订单、取消订单、卖家发货、买家确认完成、订单查询、退款申请、卖家处理退款、纠纷发起、纠纷查询、管理员纠纷处理、订单超时任务、钱包余额、钱包流水、充值、提现和用户销售统计。
 
 交易服务已接入订单定时任务：长期未支付订单自动取消、发货后超时自动确认收货、卖家超时未处理退款申请自动退款。待处理纠纷不会被系统自动裁决，且会阻止订单自动确认收货。
 
@@ -25,13 +25,20 @@
 | `GET` | `/wallet/transactions` | 当前登录用户钱包流水分页查询。 | 登录用户 |
 | `POST` | `/wallet/recharge` | 钱包充值，当前为本地余额模拟入账。 | 登录用户 |
 | `POST` | `/wallet/withdraw` | 钱包提现，当前为本地余额模拟出账。 | 登录用户 |
+| `GET` | `/statistics/sales` | 当前登录用户作为卖家的销售统计。 | 登录用户 |
 | `POST` | `/dispute`、`/dispute/create` | 买家在卖家拒绝退款后发起订单纠纷，返回纠纷 ID。 | 订单买家 |
 | `GET` | `/dispute/my`、`/dispute/myDisputes`、`/dispute/list` | 当前登录用户相关纠纷分页列表。 | 订单买家或卖家 |
 | `GET` | `/dispute/{disputeId}` | 纠纷详情。 | 纠纷双方或管理员 |
 | `GET` | `/dispute/admin/list` | 管理员纠纷分页列表。 | 管理员 |
 | `POST` | `/dispute/{disputeId}/handle`、`/dispute/admin/{disputeId}/handle` | 管理员处理纠纷；支持退款或驳回关闭。 | 管理员 |
+| `GET` | `/admin/dispute/list` | 兼容旧前端后台纠纷分页列表，支持旧参数 `disputeStatus`。 | 管理员 |
+| `GET` | `/admin/dispute/{disputeId}` | 兼容旧前端后台纠纷详情。 | 管理员 |
+| `GET` | `/admin/dispute/by-order/{orderId}` | 兼容旧前端按订单查询关联纠纷；无纠纷时返回 `null`。 | 管理员 |
+| `POST` | `/admin/dispute/{disputeId}/handle` | 兼容旧前端后台纠纷处理请求体。 | 管理员 |
 
-网关已将 `/order/**`、`/wallet/**` 和 `/dispute/**` 转发到 `xueyifang-trade`。业务服务只信任网关写入的 `X-User-*` 用户上下文。
+网关已将 `/order/**`、`/wallet/**`、`/dispute/**`、`/statistics/**` 和旧后台 `/admin/dispute/**` 转发到 `xueyifang-trade`。业务服务只信任网关写入的 `X-User-*` 用户上下文。
+
+`GET /statistics/sales` 返回旧前端销售统计字段：`totalSales`、`totalRevenue`、`averagePrice`、`bestService` 和 `recentOrders`。统计口径为当前用户作为卖家的已完成订单。
 
 ## 查询参数
 
@@ -112,7 +119,8 @@
 | 字段 | 说明 |
 | --- | --- |
 | `orderId` | 订单 ID，必填。当前仅允许订单买家在 `refundStatus=3` 卖家拒绝退款后发起。 |
-| `reason` | 纠纷原因，必填，最长 `500` 字。 |
+| `reason` / `description` | 纠纷原因，必填，最长 `500` 字；`description` 兼容旧前端。 |
+| `disputeType` | 纠纷类型，兼容旧前端接收；当前不单独持久化，响应中旧字段按“其他”返回。 |
 | `evidence` | 举证材料，可选，最长 `1000` 字；当前按字符串保存，可放图片 URL 列表的 JSON 或逗号分隔值。 |
 
 `POST /dispute/{disputeId}/handle` 或 `POST /dispute/admin/{disputeId}/handle`：
@@ -121,6 +129,10 @@
 | --- | --- |
 | `approveRefund` | 是否支持买家并退款，必填。`true` 时复用管理员强制退款链路，资金退回买家。 |
 | `handleRemark` | 处理备注；`approveRefund=false` 时必填，最长 `500` 字。 |
+| `actionType` / `needRefund` | 兼容旧前端纠纷处理：`actionType=1` 且 `needRefund=true` 等价于 `approveRefund=true`；`actionType=2` 等价于驳回。 |
+| `adminReply` / `resolution` | 兼容旧前端备注字段；当 `handleRemark` 为空时按 `resolution`、`adminReply` 顺序取值。 |
+
+纠纷响应保留新字段 `id`、`status`、`reason`、`handleRemark`，并额外返回旧前端字段别名：`disputeId`、`disputeInitiatorId`、`disputeType`、`description`、`disputeStatus`、`adminReply` 和 `resolution`。
 
 ## 状态约定
 

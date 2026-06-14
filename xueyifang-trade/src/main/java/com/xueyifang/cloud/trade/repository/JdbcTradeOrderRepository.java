@@ -158,6 +158,71 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
     }
 
     @Override
+    public SellerSalesSummary summarizeCompletedSalesBySeller(Long sellerId) {
+        return jdbcTemplate.query("""
+                        SELECT COUNT(1) AS total_sales,
+                               COALESCE(SUM(total_amount), 0) AS total_revenue
+                        FROM service_order
+                        WHERE seller_id = ?
+                          AND order_status = 4
+                          AND is_deleted = 0
+                        """,
+                ps -> ps.setLong(1, sellerId),
+                rs -> {
+                    if (!rs.next()) {
+                        return new SellerSalesSummary(0, BigDecimal.ZERO);
+                    }
+                    return new SellerSalesSummary(
+                            rs.getInt("total_sales"),
+                            rs.getBigDecimal("total_revenue"));
+                });
+    }
+
+    @Override
+    public Optional<BestSellingService> findBestSellingServiceBySeller(Long sellerId) {
+        return jdbcTemplate.query("""
+                        SELECT o.service_id,
+                               COALESCE(NULLIF(s.title, ''), CONCAT('服务', o.service_id)) AS service_title,
+                               COUNT(1) AS sales,
+                               COALESCE(SUM(o.total_amount), 0) AS revenue
+                        FROM service_order o
+                        LEFT JOIN `service` s ON s.id = o.service_id AND s.is_deleted = 0
+                        WHERE o.seller_id = ?
+                          AND o.order_status = 4
+                          AND o.is_deleted = 0
+                        GROUP BY o.service_id, s.title
+                        ORDER BY sales DESC, revenue DESC, o.service_id ASC
+                        LIMIT 1
+                        """,
+                ps -> ps.setLong(1, sellerId),
+                rs -> rs.next() ? Optional.of(new BestSellingService(
+                        rs.getObject("service_id", Long.class),
+                        rs.getString("service_title"),
+                        rs.getInt("sales"),
+                        rs.getBigDecimal("revenue"))) : Optional.empty());
+    }
+
+    @Override
+    public List<RecentSalesOrder> findRecentCompletedSalesBySeller(Long sellerId, int limit) {
+        return jdbcTemplate.query("""
+                        SELECT id, order_number, total_amount, create_time
+                        FROM service_order
+                        WHERE seller_id = ?
+                          AND order_status = 4
+                          AND is_deleted = 0
+                        ORDER BY create_time DESC, id DESC
+                        LIMIT ?
+                        """,
+                (rs, rowNum) -> new RecentSalesOrder(
+                        rs.getLong("id"),
+                        rs.getString("order_number"),
+                        rs.getBigDecimal("total_amount"),
+                        rs.getObject("create_time", LocalDateTime.class)),
+                sellerId,
+                limit);
+    }
+
+    @Override
     public List<Long> findUnpaidOrderIdsCreatedAtOrBefore(LocalDateTime deadline, int limit) {
         return jdbcTemplate.queryForList("""
                         SELECT id

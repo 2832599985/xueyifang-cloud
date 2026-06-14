@@ -1,5 +1,6 @@
 package com.xueyifang.cloud.user.repository;
 
+import java.util.Set;
 import java.util.Optional;
 
 public interface UserAccountRepository {
@@ -21,4 +22,12 @@ public interface UserAccountRepository {
 
     boolean updatePermissionReview(Long userId, int publishPermission, int permissionReviewStatus,
                                    String reviewReason, Long reviewedBy);
+
+    Set<String> findExistingStudentIds();
+
+    Set<String> findExistingUsernames();
+
+    Set<Long> findActiveProfessionalIds();
+
+    Long createImportedUser(UserImportCreateCommand command);
 }

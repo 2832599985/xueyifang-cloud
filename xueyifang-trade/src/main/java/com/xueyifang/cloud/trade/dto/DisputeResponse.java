@@ -32,7 +32,14 @@ public record DisputeResponse(
         String sellerName,
         String sellerAvatar,
         LocalDateTime createTime,
-        LocalDateTime updateTime) {
+        LocalDateTime updateTime,
+        Long disputeId,
+        Long disputeInitiatorId,
+        Integer disputeType,
+        String description,
+        Integer disputeStatus,
+        String adminReply,
+        String resolution) {
 
     public static DisputeResponse from(TradeDispute dispute) {
         return new DisputeResponse(
@@ -62,6 +69,35 @@ public record DisputeResponse(
                 dispute.sellerName(),
                 dispute.sellerAvatar(),
                 dispute.createTime(),
-                dispute.updateTime());
+                dispute.updateTime(),
+                dispute.id(),
+                dispute.complainantId(),
+                4,
+                dispute.reason(),
+                toLegacyStatus(dispute.status()),
+                dispute.handleRemark(),
+                toLegacyResolution(dispute.handleResult()));
+    }
+
+    private static Integer toLegacyStatus(Integer status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case 2 -> 3;
+            case 3 -> 4;
+            default -> status;
+        };
+    }
+
+    private static String toLegacyResolution(String handleResult) {
+        if (handleResult == null || handleResult.isBlank()) {
+            return null;
+        }
+        return switch (handleResult) {
+            case "REFUND_APPROVED" -> "管理员支持买家退款";
+            case "REJECTED" -> "管理员驳回纠纷";
+            default -> handleResult;
+        };
     }
 }
