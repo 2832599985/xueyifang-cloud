@@ -13,6 +13,7 @@ import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
 import com.xueyifang.cloud.trade.repository.OrderCreateCommand;
 import com.xueyifang.cloud.trade.repository.OrderListQuery;
 import com.xueyifang.cloud.trade.repository.OrderLogCommand;
+import com.xueyifang.cloud.trade.repository.TradeDisputeRepository;
 import com.xueyifang.cloud.trade.repository.TradeOrder;
 import com.xueyifang.cloud.trade.repository.TradeOrderRepository;
 import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
@@ -95,8 +96,12 @@ public class TradeOrderService {
 
     private final TradeOrderRepository tradeOrderRepository;
 
-    public TradeOrderService(TradeOrderRepository tradeOrderRepository) {
+    private final TradeDisputeRepository tradeDisputeRepository;
+
+    public TradeOrderService(TradeOrderRepository tradeOrderRepository,
+                             TradeDisputeRepository tradeDisputeRepository) {
         this.tradeOrderRepository = tradeOrderRepository;
+        this.tradeDisputeRepository = tradeDisputeRepository;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -239,6 +244,7 @@ public class TradeOrderService {
         if (Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has a pending refund request");
         }
+        ensureNoActiveDispute(order.id());
 
         BigDecimal amount = order.frozenAmount();
         if (amount == null || amount.signum() <= 0) {
@@ -291,6 +297,7 @@ public class TradeOrderService {
         if (Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "refund request is already pending");
         }
+        ensureNoActiveDispute(order.id());
         if (Integer.valueOf(REFUND_COMPLETED).equals(order.refundStatus())
                 || Integer.valueOf(PAYMENT_REFUNDED).equals(order.paymentStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has already been refunded");
@@ -322,6 +329,7 @@ public class TradeOrderService {
         if (!Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "there is no pending refund request");
         }
+        ensureNoActiveDispute(order.id());
 
         if (Boolean.TRUE.equals(request.approve())) {
             String reason = normalizeOptional(order.refundReason());
@@ -391,6 +399,12 @@ public class TradeOrderService {
     private TradeOrder getOrderForUpdate(Long orderId) {
         return tradeOrderRepository.findOrderForUpdate(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_EXIST));
+    }
+
+    private void ensureNoActiveDispute(Long orderId) {
+        if (tradeDisputeRepository.existsActiveByOrderId(orderId)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "order has a pending dispute");
+        }
     }
 
     private TradeUserWallet lockUserFirst(Long buyerId, Long sellerId) {

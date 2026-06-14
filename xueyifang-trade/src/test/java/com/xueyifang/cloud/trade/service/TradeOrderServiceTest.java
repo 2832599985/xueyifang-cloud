@@ -13,6 +13,7 @@ import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
 import com.xueyifang.cloud.trade.repository.TradeOrder;
 import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
+import com.xueyifang.cloud.trade.support.InMemoryTradeDisputeRepository;
 import com.xueyifang.cloud.trade.support.InMemoryTradeOrderRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,9 @@ class TradeOrderServiceTest {
 
     private final InMemoryTradeOrderRepository repository = new InMemoryTradeOrderRepository();
 
-    private final TradeOrderService tradeOrderService = new TradeOrderService(repository);
+    private final InMemoryTradeDisputeRepository disputeRepository = new InMemoryTradeDisputeRepository(repository);
+
+    private final TradeOrderService tradeOrderService = new TradeOrderService(repository, disputeRepository);
 
     @BeforeEach
     void setUp() {

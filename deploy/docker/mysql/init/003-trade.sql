@@ -53,6 +53,33 @@ CREATE TABLE IF NOT EXISTS `service_order_log` (
     CONSTRAINT `fk_service_order_log_order` FOREIGN KEY (`order_id`) REFERENCES `service_order` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service order log';
 
+CREATE TABLE IF NOT EXISTS `service_dispute` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `order_id` BIGINT UNSIGNED NOT NULL COMMENT 'order id',
+    `complainant_id` BIGINT UNSIGNED NOT NULL COMMENT 'complainant user id',
+    `respondent_id` BIGINT UNSIGNED NOT NULL COMMENT 'respondent user id',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1 pending, 2 refunded, 3 rejected',
+    `reason` VARCHAR(500) NOT NULL COMMENT 'dispute reason',
+    `evidence` VARCHAR(1000) DEFAULT NULL COMMENT 'evidence',
+    `handle_result` VARCHAR(50) DEFAULT NULL COMMENT 'handle result',
+    `handle_remark` VARCHAR(500) DEFAULT NULL COMMENT 'handle remark',
+    `handler_id` BIGINT UNSIGNED DEFAULT NULL COMMENT 'handler user id',
+    `handle_time` DATETIME DEFAULT NULL COMMENT 'handle time',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'update time',
+    `is_deleted` TINYINT NOT NULL DEFAULT 0 COMMENT 'logical delete flag',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_service_dispute_order` (`order_id`),
+    KEY `idx_service_dispute_complainant` (`complainant_id`, `create_time`),
+    KEY `idx_service_dispute_respondent` (`respondent_id`, `create_time`),
+    KEY `idx_service_dispute_status` (`status`, `create_time`),
+    KEY `idx_service_dispute_handler` (`handler_id`, `handle_time`),
+    CONSTRAINT `fk_service_dispute_order` FOREIGN KEY (`order_id`) REFERENCES `service_order` (`id`),
+    CONSTRAINT `fk_service_dispute_complainant` FOREIGN KEY (`complainant_id`) REFERENCES `user` (`id`),
+    CONSTRAINT `fk_service_dispute_respondent` FOREIGN KEY (`respondent_id`) REFERENCES `user` (`id`),
+    CONSTRAINT `fk_service_dispute_handler` FOREIGN KEY (`handler_id`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service dispute';
+
 CREATE TABLE IF NOT EXISTS `wallet_transaction` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'user id',
