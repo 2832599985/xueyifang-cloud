@@ -46,6 +46,10 @@ spring:
           uri: lb://xueyifang-trade
           predicates:
             - Path=/order/**,/wallet/**,/dispute/**
+        - id: xueyifang-system
+          uri: lb://xueyifang-system
+          predicates:
+            - Path=/professional/**,/trade-location/**,/sys-config/**,/admin/professional/**,/admin/trade-location/**,/admin/sys-config/**
 
 management:
   endpoints:

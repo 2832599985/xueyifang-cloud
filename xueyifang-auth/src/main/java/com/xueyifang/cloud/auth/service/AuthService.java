@@ -3,6 +3,7 @@ package com.xueyifang.cloud.auth.service;
 import com.xueyifang.cloud.auth.dto.LoginRequest;
 import com.xueyifang.cloud.auth.dto.LoginResponse;
 import com.xueyifang.cloud.auth.dto.RegisterRequest;
+import com.xueyifang.cloud.auth.repository.AuthSystemConfigRepository;
 import com.xueyifang.cloud.auth.repository.AuthUser;
 import com.xueyifang.cloud.auth.repository.AuthUserCreateCommand;
 import com.xueyifang.cloud.auth.repository.AuthUserRepository;
@@ -20,21 +21,33 @@ public class AuthService {
 
     private static final int ACTIVE_STATUS = 1;
 
+    private static final String REGISTER_ENABLED_KEY = "REGISTER_ENABLED";
+
+    private static final String REGISTER_ENABLED_DEFAULT = "1";
+
     private final AuthUserRepository userRepository;
+
+    private final AuthSystemConfigRepository systemConfigRepository;
 
     private final PasswordEncoder passwordEncoder;
 
     private final JwtTokenService jwtTokenService;
 
-    public AuthService(AuthUserRepository userRepository, PasswordEncoder passwordEncoder,
+    public AuthService(AuthUserRepository userRepository, AuthSystemConfigRepository systemConfigRepository,
+                       PasswordEncoder passwordEncoder,
                        JwtTokenService jwtTokenService) {
         this.userRepository = userRepository;
+        this.systemConfigRepository = systemConfigRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void register(RegisterRequest request) {
+        if (!isRegisterEnabled()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR, "registration is disabled");
+        }
+
         String username = normalizeRequired(request.username(), "username");
         if (userRepository.existsByUsername(username)) {
             throw new BusinessException(ErrorCode.USER_USERNAME_EXIST);
@@ -84,6 +97,12 @@ public class AuthService {
 
     private BusinessException loginFailed() {
         return new BusinessException(ErrorCode.USER_PASSWORD_ERROR, "username or password is invalid");
+    }
+
+    private boolean isRegisterEnabled() {
+        String value = systemConfigRepository.findEnabledConfigValue(REGISTER_ENABLED_KEY)
+                .orElse(REGISTER_ENABLED_DEFAULT);
+        return "1".equals(value.trim()) || "true".equalsIgnoreCase(value.trim());
     }
 
     private String normalizeRequired(String value, String field) {

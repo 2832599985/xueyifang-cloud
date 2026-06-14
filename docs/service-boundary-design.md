@@ -2,7 +2,7 @@
 
 ## 结论
 
-阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易五类核心服务；消息、系统配置、文件服务暂不落空模块，等第一批业务跑通后再拆。
+阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易和系统六类核心服务；消息和文件服务暂不落空模块，等第一批业务跑通后再拆。
 
 ## 当前落地服务
 
@@ -13,13 +13,13 @@
 | `xueyifang-user` | `8200` | 用户资料、角色、发布权限、账号状态。 | `/users/**`、`/permission/**`，兼容 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` |
 | `xueyifang-service` | `8300` | 服务发布、浏览、服务图片关系、收藏、评价展示。 | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
 | `xueyifang-trade` | `8400` | 订单、支付状态、退款、纠纷、钱包流水。 | `/order/**`、`/wallet/**`、`/dispute/**` |
+| `xueyifang-system` | `8500` | 专业、交易地点和系统配置读取。 | `/professional/**`、`/trade-location/**`、`/sys-config/**`、`/admin/professional/**`、`/admin/trade-location/**`、`/admin/sys-config/**` |
 
 ## 暂缓落地服务
 
 | 候选服务 | 暂缓原因 | 后续触发条件 |
 | --- | --- | --- |
 | `xueyifang-message` | 聊天和通知涉及 WebSocket 多实例、离线消息和推送一致性，过早拆会增加联调成本。 | 交易链路稳定后，迁移聊天和通知。 |
-| `xueyifang-system` | 专业、交易地点、系统配置属于公共字典，第一批可以先按调用方兼容。 | 认证注册开关、服务字典和后台配置需要统一管理时拆出。 |
 | `xueyifang-file` | 文件接口需要兼容本地和 OSS，服务图片表仍归服务市场。 | 服务发布和图片上传联调前拆出或落入公共基础能力。 |
 
 ## 边界理由
@@ -53,5 +53,6 @@
 | `xueyifang-user` | `lb://xueyifang-user` | `/users/**`、`/permission/**` |
 | `xueyifang-service` | `lb://xueyifang-service` | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
 | `xueyifang-trade` | `lb://xueyifang-trade` | `/order/**`、`/wallet/**`、`/dispute/**` |
+| `xueyifang-system` | `lb://xueyifang-system` | `/professional/**`、`/trade-location/**`、`/sys-config/**`、`/admin/professional/**`、`/admin/trade-location/**`、`/admin/sys-config/**` |
 
 旧前端仍可调用已迁移的 `/auth/currentUser` 等路径；新增前端代码优先使用 `/users/me` 系列路径。

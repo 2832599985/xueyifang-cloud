@@ -16,7 +16,7 @@
 
 | 方法 | 路径 | 说明 | 鉴权 |
 | --- | --- | --- | --- |
-| `POST` | `/auth/register` | 注册用户，写入 `user` 表并使用 BCrypt 加密密码。 | 公开 |
+| `POST` | `/auth/register` | 注册用户，写入 `user` 表并使用 BCrypt 加密密码；会读取启用的 `sys_config.REGISTER_ENABLED`，值为 `0` 时拒绝注册。 | 公开 |
 | `POST` | `/auth/login` | 校验用户名和密码，签发 JWT。JWT 的 `publishPermission` 来自 `user.publish_permission`，缺失时按角色兜底。 | 公开 |
 | `POST` | `/auth/token/refresh` | 刷新有效 Token。 | 公开，但会拒绝无效、过期或黑名单 Token |
 | `POST` | `/auth/logout` | 将当前 Token 加入 Redis 黑名单。 | 登录 |

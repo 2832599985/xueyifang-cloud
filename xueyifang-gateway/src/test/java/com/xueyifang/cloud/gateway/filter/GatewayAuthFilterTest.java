@@ -59,6 +59,21 @@ class GatewayAuthFilterTest {
     }
 
     @Test
+    void allowsSystemPublicReadPathsWithoutToken() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/trade-location/list/all").build());
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+
+        filter.filter(exchange, chainExchange -> {
+            chainCalled.set(true);
+            return chainExchange.getResponse().setComplete();
+        }).block();
+
+        assertThat(chainCalled).isTrue();
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    @Test
     void rejectsProtectedPathWithoutToken() {
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/order/my-buying").build());

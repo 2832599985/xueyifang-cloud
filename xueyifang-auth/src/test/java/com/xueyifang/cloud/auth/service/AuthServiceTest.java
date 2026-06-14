@@ -4,6 +4,7 @@ import com.xueyifang.cloud.auth.dto.LoginRequest;
 import com.xueyifang.cloud.auth.dto.LoginResponse;
 import com.xueyifang.cloud.auth.dto.RegisterRequest;
 import com.xueyifang.cloud.auth.repository.AuthUser;
+import com.xueyifang.cloud.auth.support.InMemoryAuthSystemConfigRepository;
 import com.xueyifang.cloud.auth.support.InMemoryAuthUserRepository;
 import com.xueyifang.cloud.common.core.api.ErrorCode;
 import com.xueyifang.cloud.common.core.auth.AuthConstants;
@@ -31,13 +32,20 @@ class AuthServiceTest {
 
     private final InMemoryAuthUserRepository userRepository = new InMemoryAuthUserRepository();
 
+    private final InMemoryAuthSystemConfigRepository systemConfigRepository =
+            new InMemoryAuthSystemConfigRepository();
+
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private final JwtTokenService jwtTokenService = new JwtTokenService(
             new JwtTokenProperties(SECRET, Duration.ofDays(7), JwtTokenProperties.DEFAULT_ISSUER),
             Clock.fixed(NOW, ZoneOffset.UTC));
 
-    private final AuthService authService = new AuthService(userRepository, passwordEncoder, jwtTokenService);
+    private final AuthService authService = new AuthService(
+            userRepository,
+            systemConfigRepository,
+            passwordEncoder,
+            jwtTokenService);
 
     @Test
     void registersAndLogsInStudent() {
@@ -68,6 +76,16 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getCode()).isEqualTo(ErrorCode.USER_USERNAME_EXIST.getCode()));
+    }
+
+    @Test
+    void rejectsRegistrationWhenSystemConfigDisablesIt() {
+        systemConfigRepository.put("REGISTER_ENABLED", "0");
+
+        assertThatThrownBy(() -> authService.register(
+                new RegisterRequest("closed", "secret123", null, null, null)))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getCode()).isEqualTo(ErrorCode.FORBIDDEN_ERROR.getCode()));
     }
 
     @Test

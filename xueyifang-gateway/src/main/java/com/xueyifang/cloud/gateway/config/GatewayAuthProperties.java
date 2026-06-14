@@ -23,6 +23,8 @@ public class GatewayAuthProperties {
             "/review/service/**",
             "/professional/list",
             "/trade-location/list",
+            "/trade-location/list/all",
+            "/trade-location/page",
             "/file/view/**",
             "/sys-config/register-status",
             "/actuator/**",
@@ -33,7 +35,8 @@ public class GatewayAuthProperties {
 
     private List<String> publicGetPaths = new ArrayList<>(List.of(
             "/service/*",
-            "/professional/*"
+            "/professional/*",
+            "/trade-location/*"
     ));
 
     public boolean isEnabled() {

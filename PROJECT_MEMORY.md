@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场与交易链路已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路和系统字典已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口。
 
 ## 根目录索引
 
@@ -34,12 +34,14 @@
 | `docs/auth-user-api-contract.md` | 文档 | 阶段 4 认证与用户资料接口契约，记录新旧兼容路径和 Token 约定。 |
 | `docs/service-market-api-contract.md` | 文档 | 阶段 5 服务市场接口契约，记录服务浏览和发布者管理接口。 |
 | `docs/trade-api-contract.md` | 文档 | 阶段 5 交易服务接口契约，记录订单最短链路和资金流状态约定。 |
+| `docs/system-api-contract.md` | 文档 | 阶段 5 系统字典与配置接口契约，记录专业、交易地点和系统配置接口。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
 | `deploy/docker/mysql/init/001-user.sql` | SQL | 本地 MySQL 初始化 `user` 表，供认证和用户服务使用。 |
 | `deploy/docker/mysql/init/002-service.sql` | SQL | 本地 MySQL 初始化 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review` 表，供服务市场使用。 |
 | `deploy/docker/mysql/init/003-trade.sql` | SQL | 本地 MySQL 初始化 `service_order`、`service_order_log`、`service_dispute` 和 `wallet_transaction` 表，供交易服务使用，并包含退款和纠纷状态查询索引。 |
+| `deploy/docker/mysql/init/004-system.sql` | SQL | 本地 MySQL 初始化 `professional`、`trade_location` 和 `sys_config` 表，供系统服务使用。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
 | `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
@@ -47,6 +49,7 @@
 | `xueyifang-user/` | 目录 | 计划中的用户服务。 |
 | `xueyifang-service/` | 目录 | 服务市场模块，承载服务发布、浏览、收藏和评价展示。 |
 | `xueyifang-trade/` | 目录 | 交易模块，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
+| `xueyifang-system/` | 目录 | 系统模块，承载专业、交易地点和系统配置。 |
 
 ## 计划模块索引
 
@@ -55,10 +58,11 @@
 | `xueyifang-common-core` | 已创建 | 通用响应、错误码、业务异常、用户上下文和链路常量，避免绑定 Web 技术栈。 |
 | `xueyifang-common-web` | 已创建 | Web 层通用能力，供 Servlet 服务使用；自动装配统一异常处理、requestId 过滤器和用户上下文过滤器。 |
 | `xueyifang-gateway` | 已创建 | Spring Cloud Gateway 统一入口，当前使用 Nacos 服务发现和 `lb://` 路由，并生成或透传 `X-Request-Id`，校验 Bearer Token、拒绝黑名单 Token 后透传可信用户上下文。 |
-| `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、Token 刷新、退出登录、Redis Token 黑名单，并按 `user.publish_permission` 签发权限声明。 |
+| `xueyifang-auth` | 已创建 | 认证服务，当前包含 Spring Boot 启动类、登录、注册、注册开关、Token 刷新、退出登录、Redis Token 黑名单，并按 `user.publish_permission` 签发权限声明。 |
 | `xueyifang-user` | 已创建 | 用户服务，当前包含当前用户、资料更新、改密、发布权限状态和旧 `/auth/*` 资料路径兼容接口。 |
 | `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、服务列表、服务详情、标签读取、发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态接口。 |
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口。 |
+| `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关和后台系统配置维护接口。 |
 
 ## 关键文件索引
 
@@ -91,12 +95,14 @@
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/auth/RedisReactiveTokenBlacklistService.java` | Gateway Redis Token 黑名单查询实现。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayAuthFilter.java` | Gateway Bearer Token 校验、错误响应和 `X-User-*` 用户上下文透传。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayRequestIdFilter.java` | Gateway requestId 生成、透传、响应回写和 MDC 写入。 |
-| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由和旧 `/auth/*` 用户资料路径兼容路由配置。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由、旧 `/auth/*` 用户资料路径兼容路由和系统服务路由配置。 |
 | `xueyifang-auth/pom.xml` | 认证服务 POM。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthController.java` | 认证入口，提供 `POST /auth/register`、`POST /auth/login` 和 `POST /auth/logout`。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthTokenController.java` | Token 刷新接口，当前提供 `POST /auth/token/refresh`，并拒绝黑名单 Token。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/repository/JdbcAuthUserRepository.java` | 基于 `JdbcTemplate` 的 `user` 表认证数据访问，读取发布权限用于签发 JWT。 |
+| `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/repository/AuthSystemConfigRepository.java` | 认证服务读取系统配置的接口，当前用于注册开关。 |
+| `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/repository/JdbcAuthSystemConfigRepository.java` | 基于 `JdbcTemplate` 的 `sys_config` 读取实现，查询启用配置值。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/service/AuthService.java` | 登录、注册、BCrypt 密码校验和 JWT 签发业务逻辑。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/service/AuthTokenService.java` | Token 刷新和退出登录黑名单业务逻辑。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/token/RedisTokenBlacklistService.java` | Auth 服务 Redis Token 黑名单写入和查询实现。 |
@@ -156,9 +162,21 @@
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/service/TradeWalletService.java` | 钱包余额、流水查询、充值和提现业务逻辑。 |
 | `xueyifang-trade/src/main/java/com/xueyifang/cloud/trade/task/TradeOrderTaskScheduler.java` | 订单定时任务调度入口，触发自动取消、自动确认收货和自动退款。 |
 | `xueyifang-trade/src/main/resources/application.yml` | 交易服务端口、服务名、Nacos、MySQL 和订单定时任务配置。 |
+| `xueyifang-system/pom.xml` | 系统服务 POM，依赖公共 Web、JDBC、MySQL、Actuator 和 Nacos。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/XueyifangSystemApplication.java` | 系统服务启动类。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/ProfessionalController.java` | 专业字典旧路径入口，提供公开查询和兼容管理员写接口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/TradeLocationController.java` | 交易地点旧路径入口，提供公开查询和兼容管理员写接口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/SysConfigController.java` | 系统配置公开入口，提供注册开关状态。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminProfessionalController.java` | 后台专业管理入口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminTradeLocationController.java` | 后台交易地点管理入口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/controller/AdminSysConfigController.java` | 后台系统配置管理入口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/SystemDictionaryRepository.java` | 专业、交易地点和系统配置数据访问接口。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/JdbcSystemDictionaryRepository.java` | 基于 `JdbcTemplate` 的系统字典和配置数据访问实现。 |
+| `xueyifang-system/src/main/java/com/xueyifang/cloud/system/service/SystemDictionaryService.java` | 系统字典公开读取、管理员维护、注册开关和配置查询业务逻辑。 |
+| `xueyifang-system/src/main/resources/application.yml` | 系统服务端口、服务名、Nacos 和 MySQL 配置。 |
 
 ## Todo
 
 - 资金规则复杂后再评估是否拆出钱包服务。
-- 启动本地 Nacos 后，做一次网关到业务服务的健康检查联通验证。
+- 启动本地 Nacos 后，做一次网关到各业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。
