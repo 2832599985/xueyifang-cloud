@@ -2,7 +2,7 @@
 
 ## 结论
 
-阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易和系统六类核心服务；消息和文件服务暂不落空模块，等第一批业务跑通后再拆。
+阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易、系统和文件七类核心服务；消息服务暂不落空模块，等第一批业务跑通后再拆。
 
 ## 当前落地服务
 
@@ -14,13 +14,13 @@
 | `xueyifang-service` | `8300` | 服务发布、浏览、服务图片关系、收藏、评价展示。 | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
 | `xueyifang-trade` | `8400` | 订单、支付状态、退款、纠纷、钱包流水。 | `/order/**`、`/wallet/**`、`/dispute/**` |
 | `xueyifang-system` | `8500` | 专业、交易地点和系统配置读取。 | `/professional/**`、`/trade-location/**`、`/sys-config/**`、`/admin/professional/**`、`/admin/trade-location/**`、`/admin/sys-config/**` |
+| `xueyifang-file` | `8600` | 本地文件上传、批量上传、删除和公开访问。 | `/file/**`、`/api/file/**` |
 
 ## 暂缓落地服务
 
 | 候选服务 | 暂缓原因 | 后续触发条件 |
 | --- | --- | --- |
 | `xueyifang-message` | 聊天和通知涉及 WebSocket 多实例、离线消息和推送一致性，过早拆会增加联调成本。 | 交易链路稳定后，迁移聊天和通知。 |
-| `xueyifang-file` | 文件接口需要兼容本地和 OSS，服务图片表仍归服务市场。 | 服务发布和图片上传联调前拆出或落入公共基础能力。 |
 
 ## 边界理由
 
@@ -39,8 +39,9 @@
 3. 用户资料和发布权限。
 4. 服务列表、服务详情、标签和基础字典读取。
 5. 订单创建、支付、买家订单、卖家订单的最短链路。
+6. 文件上传、删除和公开访问。
 
-这个顺序先打通用户进入系统、浏览服务、下单交易的主流程，再迁移聊天、通知、后台统计和文件存储。
+这个顺序先打通用户进入系统、浏览服务、下单交易和上传图片的主流程，再迁移聊天、通知和后台统计。
 
 ## 路由约定
 
@@ -54,5 +55,7 @@
 | `xueyifang-service` | `lb://xueyifang-service` | `/service/**`、`/service-image/**`、`/favorite/**`、`/review/**` |
 | `xueyifang-trade` | `lb://xueyifang-trade` | `/order/**`、`/wallet/**`、`/dispute/**` |
 | `xueyifang-system` | `lb://xueyifang-system` | `/professional/**`、`/trade-location/**`、`/sys-config/**`、`/admin/professional/**`、`/admin/trade-location/**`、`/admin/sys-config/**` |
+| `xueyifang-file-api-compat` | `lb://xueyifang-file` | `/api/file/**`，转发前剥离 `/api` 前缀 |
+| `xueyifang-file` | `lb://xueyifang-file` | `/file/**` |
 
 旧前端仍可调用已迁移的 `/auth/currentUser` 等路径；新增前端代码优先使用 `/users/me` 系列路径。

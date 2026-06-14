@@ -25,6 +25,7 @@ public class GatewayAuthProperties {
             "/trade-location/list",
             "/trade-location/list/all",
             "/trade-location/page",
+            "/api/file/view/**",
             "/file/view/**",
             "/sys-config/register-status",
             "/actuator/**",

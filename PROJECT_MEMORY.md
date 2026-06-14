@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路和系统字典已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典和文件能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口。
 
 ## 根目录索引
 
@@ -35,6 +35,7 @@
 | `docs/service-market-api-contract.md` | 文档 | 阶段 5 服务市场接口契约，记录服务浏览和发布者管理接口。 |
 | `docs/trade-api-contract.md` | 文档 | 阶段 5 交易服务接口契约，记录订单最短链路和资金流状态约定。 |
 | `docs/system-api-contract.md` | 文档 | 阶段 5 系统字典与配置接口契约，记录专业、交易地点和系统配置接口。 |
+| `docs/file-api-contract.md` | 文档 | 阶段 5 文件服务接口契约，记录上传、批量上传、删除、查看和网关兼容路径。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
@@ -50,6 +51,7 @@
 | `xueyifang-service/` | 目录 | 服务市场模块，承载服务发布、浏览、收藏和评价展示。 |
 | `xueyifang-trade/` | 目录 | 交易模块，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
 | `xueyifang-system/` | 目录 | 系统模块，承载专业、交易地点和系统配置。 |
+| `xueyifang-file/` | 目录 | 文件模块，承载本地文件上传、批量上传、删除和公开访问。 |
 
 ## 计划模块索引
 
@@ -63,6 +65,7 @@
 | `xueyifang-service` | 已创建 | 服务市场，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、服务列表、服务详情、标签读取、发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态接口。 |
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口。 |
 | `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关和后台系统配置维护接口。 |
+| `xueyifang-file` | 已创建 | 文件服务，当前包含 Spring Boot 启动类、本地存储配置、单文件上传、批量上传、删除和公开查看接口，并通过网关兼容 `/api/file/**`。 |
 
 ## 关键文件索引
 
@@ -95,7 +98,7 @@
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/auth/RedisReactiveTokenBlacklistService.java` | Gateway Redis Token 黑名单查询实现。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayAuthFilter.java` | Gateway Bearer Token 校验、错误响应和 `X-User-*` 用户上下文透传。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayRequestIdFilter.java` | Gateway requestId 生成、透传、响应回写和 MDC 写入。 |
-| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由、旧 `/auth/*` 用户资料路径兼容路由和系统服务路由配置。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由、旧 `/auth/*` 用户资料路径兼容路由、系统服务路由和文件服务 `/api/file/**` 兼容路由配置。 |
 | `xueyifang-auth/pom.xml` | 认证服务 POM。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthController.java` | 认证入口，提供 `POST /auth/register`、`POST /auth/login` 和 `POST /auth/logout`。 |
@@ -174,6 +177,16 @@
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/repository/JdbcSystemDictionaryRepository.java` | 基于 `JdbcTemplate` 的系统字典和配置数据访问实现。 |
 | `xueyifang-system/src/main/java/com/xueyifang/cloud/system/service/SystemDictionaryService.java` | 系统字典公开读取、管理员维护、注册开关和配置查询业务逻辑。 |
 | `xueyifang-system/src/main/resources/application.yml` | 系统服务端口、服务名、Nacos 和 MySQL 配置。 |
+| `xueyifang-file/pom.xml` | 文件服务 POM，依赖公共 Web、Spring MVC、Actuator 和 Nacos。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/XueyifangFileApplication.java` | 文件服务启动类。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/config/FileStorageProperties.java` | 文件存储配置绑定，包含本地路径、访问前缀、允许类型和业务大小限制。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/controller/FileController.java` | 文件入口，提供 `/file/upload`、`/file/upload/batch`、`/file/delete` 和 `/file/view/**`。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/service/FileService.java` | 文件上传业务校验，校验登录用户、业务类型、大小和扩展名。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/service/FileUploadBizType.java` | 文件上传业务类型枚举，当前支持用户头像和服务图片。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/storage/FileStorageService.java` | 文件存储策略接口，隔离本地存储和后续 OSS 扩展。 |
+| `xueyifang-file/src/main/java/com/xueyifang/cloud/file/storage/LocalFileStorageService.java` | 本地文件存储实现，负责落盘、删除、查看和路径遍历防护。 |
+| `xueyifang-file/src/main/resources/application.yml` | 文件服务端口、服务名、Nacos、上传大小和本地存储配置。 |
+| `xueyifang-file/src/test/java/com/xueyifang/cloud/file/service/FileServiceTest.java` | 文件服务单元测试，覆盖上传、批量上传、删除、类型/大小校验和路径安全。 |
 
 ## Todo
 

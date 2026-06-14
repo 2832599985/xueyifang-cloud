@@ -50,6 +50,16 @@ spring:
           uri: lb://xueyifang-system
           predicates:
             - Path=/professional/**,/trade-location/**,/sys-config/**,/admin/professional/**,/admin/trade-location/**,/admin/sys-config/**
+        - id: xueyifang-file-api-compat
+          uri: lb://xueyifang-file
+          predicates:
+            - Path=/api/file/**
+          filters:
+            - StripPrefix=1
+        - id: xueyifang-file
+          uri: lb://xueyifang-file
+          predicates:
+            - Path=/file/**
 
 management:
   endpoints:

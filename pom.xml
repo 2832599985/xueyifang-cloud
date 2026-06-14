@@ -27,6 +27,7 @@
         <module>xueyifang-service</module>
         <module>xueyifang-trade</module>
         <module>xueyifang-system</module>
+        <module>xueyifang-file</module>
     </modules>
 
     <properties>

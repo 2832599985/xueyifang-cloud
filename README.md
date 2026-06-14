@@ -24,6 +24,7 @@
 | `xueyifang-service` | 服务市场，承载服务发布、浏览、收藏和评价展示。 |
 | `xueyifang-trade` | 交易服务，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
 | `xueyifang-system` | 系统服务，承载专业、交易地点和系统配置读取。 |
+| `xueyifang-file` | 文件服务，承载本地文件上传、批量上传、删除和公开访问。 |
 
 ## 已落地基础能力
 
@@ -39,10 +40,12 @@
 - `xueyifang-service` 已接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review` 表，提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态接口。
 - `xueyifang-trade` 已接入 `service_order`、`service_order_log`、`service_dispute` 和 `wallet_transaction` 表，提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单超时任务、买家订单、卖家订单、订单详情、钱包余额、钱包流水、充值和提现能力。
 - `xueyifang-system` 已接入 `professional`、`trade_location` 和 `sys_config` 表，提供专业列表、交易地点、注册开关和后台维护接口。
+- `xueyifang-file` 已接入本地文件存储，提供单文件上传、批量上传、删除和公开查看接口，并兼容 `/api/file/**` 网关路径。
 - 认证与用户接口契约见 [docs/auth-user-api-contract.md](docs/auth-user-api-contract.md)。
 - 服务市场接口契约见 [docs/service-market-api-contract.md](docs/service-market-api-contract.md)。
 - 交易服务接口契约见 [docs/trade-api-contract.md](docs/trade-api-contract.md)。
 - 系统字典与配置接口契约见 [docs/system-api-contract.md](docs/system-api-contract.md)。
+- 文件服务接口契约见 [docs/file-api-contract.md](docs/file-api-contract.md)。
 
 ## 本地构建
 
