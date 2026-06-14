@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典、文件能力和消息能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请、后台发布权限审核和通知回接，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、`REVIEW_MODE` 审核流、后台服务审核、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现和交易/纠纷通知回接，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口，`xueyifang-message` 已提供聊天、通知、内部通知创建和单实例 WebSocket 在线推送。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典、文件能力和消息能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料、发布权限申请、后台发布权限审核和通知回接，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、`REVIEW_MODE` 审核流、后台服务审核、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现和交易/纠纷通知回接，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口，`xueyifang-message` 已提供聊天、通知、内部通知创建、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播。
 
 ## 根目录索引
 
@@ -36,7 +36,7 @@
 | `docs/trade-api-contract.md` | 文档 | 阶段 5 交易服务接口契约，记录订单最短链路和资金流状态约定。 |
 | `docs/system-api-contract.md` | 文档 | 阶段 5 系统字典与配置接口契约，记录专业、交易地点和系统配置接口。 |
 | `docs/file-api-contract.md` | 文档 | 阶段 5 文件服务接口契约，记录上传、批量上传、删除、查看和网关兼容路径。 |
-| `docs/message-api-contract.md` | 文档 | 阶段 5 消息服务接口契约，记录聊天、通知、内部通知创建、WebSocket 和通知回接策略。 |
+| `docs/message-api-contract.md` | 文档 | 阶段 5 消息服务接口契约，记录聊天、通知、内部通知创建、WebSocket、Redis 广播和通知回接策略。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
@@ -54,7 +54,7 @@
 | `xueyifang-trade/` | 目录 | 交易模块，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
 | `xueyifang-system/` | 目录 | 系统模块，承载专业、交易地点和系统配置。 |
 | `xueyifang-file/` | 目录 | 文件模块，承载本地文件上传、批量上传、删除和公开访问。 |
-| `xueyifang-message/` | 目录 | 消息模块，承载聊天、通知、内部通知创建和单实例 WebSocket 在线推送。 |
+| `xueyifang-message/` | 目录 | 消息模块，承载聊天、通知、内部通知创建、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播。 |
 
 ## 计划模块索引
 
@@ -69,7 +69,7 @@
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值、提现接口和交易/纠纷通知回接。 |
 | `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关和后台系统配置维护接口。 |
 | `xueyifang-file` | 已创建 | 文件服务，当前包含 Spring Boot 启动类、本地存储配置、单文件上传、批量上传、删除和公开查看接口，并通过网关兼容 `/api/file/**`。 |
-| `xueyifang-message` | 已创建 | 消息服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、聊天发送、聊天记录、会话列表、通知列表、未读数、标记已读、内部通知创建和 `/api/ws` 单实例 WebSocket 兼容入口。 |
+| `xueyifang-message` | 已创建 | 消息服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、聊天发送、聊天记录、会话列表、通知列表、未读数、标记已读、内部通知创建、`/api/ws` 单实例 WebSocket 兼容入口和可选 Redis pub/sub 多实例广播。 |
 
 ## 关键文件索引
 
@@ -201,8 +201,10 @@
 | `xueyifang-file/src/main/java/com/xueyifang/cloud/file/storage/LocalFileStorageService.java` | 本地文件存储实现，负责落盘、删除、查看和路径遍历防护。 |
 | `xueyifang-file/src/main/resources/application.yml` | 文件服务端口、服务名、Nacos、上传大小和本地存储配置。 |
 | `xueyifang-file/src/test/java/com/xueyifang/cloud/file/service/FileServiceTest.java` | 文件服务单元测试，覆盖上传、批量上传、删除、类型/大小校验和路径安全。 |
-| `xueyifang-message/pom.xml` | 消息服务 POM，依赖公共 Web、JDBC、Spring MVC、WebSocket、Actuator 和 Nacos。 |
+| `xueyifang-message/pom.xml` | 消息服务 POM，依赖公共 Web、JDBC、Spring MVC、WebSocket、Redis、Actuator 和 Nacos。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/XueyifangMessageApplication.java` | 消息服务启动类。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/config/MessagePushConfiguration.java` | 消息实时推送配置，按开关注册 Redis pub/sub 监听容器。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/config/MessagePushProperties.java` | 消息实时推送配置属性，包含 Redis 广播开关、频道和实例标识。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/controller/ChatController.java` | 聊天入口，提供 `/chat/send`、`/chat/messages/{userId}` 和 `/chat/conversations`。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/controller/NotificationController.java` | 通知入口，提供 `/notification/my-notifications`、`/notification/unreadCount`、`/notification/{id}/read` 和 `/notification/readAll`。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/controller/InternalNotificationController.java` | 内部通知入口，提供服务间 `POST /internal/notifications` 创建通知。 |
@@ -211,13 +213,19 @@
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/service/NotificationService.java` | 通知业务逻辑，支持通知创建、查询、未读数和已读状态。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/MessageWebSocketConfiguration.java` | WebSocket `/ws` 注册，兼容 Gateway 用户头和旧前端 `?token=` 握手。 |
 | `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/MessageWebSocketSessionManager.java` | 单实例 WebSocket 会话表和在线推送。 |
-| `xueyifang-message/src/main/resources/application.yml` | 消息服务端口、服务名、Nacos、MySQL 和 JWT 配置。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/WebSocketMessagePushService.java` | 默认本机 WebSocket 推送实现，在 Redis 广播关闭时启用。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/RedisBroadcastMessagePushService.java` | Redis 广播推送实现，先投递本机连接，再发布跨实例实时消息。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/RedisMessagePushSubscriber.java` | Redis 实时消息订阅者，过滤本实例广播并投递其他实例消息。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/RedisRealtimePushMessage.java` | Redis 广播消息载荷，记录来源实例、目标用户和实时消息体。 |
+| `xueyifang-message/src/main/resources/application.yml` | 消息服务端口、服务名、Nacos、MySQL、Redis、JWT 和消息推送配置。 |
 | `xueyifang-message/src/test/java/com/xueyifang/cloud/message/service/ChatServiceTest.java` | 聊天服务单元测试，覆盖发送、会话未读、禁用接收者、自发消息和登录校验。 |
 | `xueyifang-message/src/test/java/com/xueyifang/cloud/message/service/NotificationServiceTest.java` | 通知服务单元测试，覆盖创建推送、未读数、已读权限、通知类型和登录校验。 |
+| `xueyifang-message/src/test/java/com/xueyifang/cloud/message/websocket/RedisBroadcastMessagePushServiceTest.java` | Redis 广播推送单元测试，覆盖本机投递、广播发布和 Redis 异常降级。 |
+| `xueyifang-message/src/test/java/com/xueyifang/cloud/message/websocket/RedisMessagePushSubscriberTest.java` | Redis 广播订阅单元测试，覆盖跨实例投递和本实例消息过滤。 |
 
 ## Todo
 
 - 资金规则复杂后再评估是否拆出钱包服务。
-- 多实例部署 `xueyifang-message` 前，补 Redis pub/sub、消息队列广播或网关粘性会话方案。
+- 多实例部署 `xueyifang-message` 前，基于已接入 Redis pub/sub 做联调压测，并按可靠性要求评估消息队列、离线补偿或网关粘性会话。
 - 启动本地 Nacos 后，做一次网关到各业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。

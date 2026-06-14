@@ -2,7 +2,7 @@
 
 ## 范围
 
-`xueyifang-message` 承接原单体 `/chat/*`、`/notification/*` 和 `/api/ws` 能力。当前支持聊天消息落库、会话列表、聊天记录、通知列表、未读数、标记已读、内部通知创建和单实例 WebSocket 在线推送。
+`xueyifang-message` 承接原单体 `/chat/*`、`/notification/*` 和 `/api/ws` 能力。当前支持聊天消息落库、会话列表、聊天记录、通知列表、未读数、标记已读、内部通知创建、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播。
 
 消息服务持有 `user_chat` 和 `notification` 表。用户资料只读取 `user` 表的轻量展示字段，不接管用户状态管理。
 
@@ -177,10 +177,12 @@ ws://{gateway-host}:8080/api/ws?token={jwt}
 | `NEW_CHAT` | `ChatMessageResponse`。 |
 | `NEW_NOTIFICATION` | `NotificationResponse`。 |
 
-当前实现使用消息服务进程内会话表，适合单实例或粘性会话。多实例部署时，需要增加 Redis pub/sub、消息队列广播或网关粘性会话方案。
+默认实现使用消息服务进程内会话表，适合单实例或网关粘性会话。
+
+设置 `XUEYIFANG_MESSAGE_REDIS_PUSH_ENABLED=true` 后启用 Redis pub/sub 广播。业务写入成功后会先投递本实例在线连接，再向 `XUEYIFANG_MESSAGE_REDIS_PUSH_CHANNEL` 指定频道发布实时消息；其他消息服务实例订阅后向本机在线连接投递。`XUEYIFANG_MESSAGE_INSTANCE_ID` 用于识别消息来源，避免本实例重复消费自己的广播。
 
 ## 后续回接
 
 交易订单和纠纷流程已通过 HTTP 内部接口调用消息服务创建通知。当前覆盖新订单、支付、取消、发货、完成、退款申请、退款完成、纠纷创建和纠纷处理结果。
 
-权限审核和服务审核流程已在后台审核接口落地后复用同一内部通知接口，分别创建 `notificationType=1` 和 `notificationType=5` 的通知。多实例或高并发场景可再替换为事件/MQ 机制。
+权限审核和服务审核流程已在后台审核接口落地后复用同一内部通知接口，分别创建 `notificationType=1` 和 `notificationType=5` 的通知。多实例场景可先启用 Redis pub/sub；高并发或强可靠通知场景再替换为事件/MQ 机制。

@@ -3,9 +3,12 @@ package com.xueyifang.cloud.message.websocket;
 import com.xueyifang.cloud.message.dto.ChatMessageResponse;
 import com.xueyifang.cloud.message.dto.NotificationResponse;
 import com.xueyifang.cloud.message.service.MessagePushService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "xueyifang.message.push.redis", name = "enabled", havingValue = "false",
+        matchIfMissing = true)
 public class WebSocketMessagePushService implements MessagePushService {
 
     private final MessageWebSocketSessionManager sessionManager;

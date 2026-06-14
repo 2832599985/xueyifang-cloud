@@ -2,7 +2,7 @@
 
 ## 结论
 
-阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易、系统、文件和消息八类核心服务。消息服务先以单实例 WebSocket 推送落地，多实例广播后续增强。
+阶段 2 采用“少拆一点，但边界要准”的策略。当前先保留网关、认证、用户、服务市场、交易、系统、文件和消息八类核心服务。消息服务默认以单实例 WebSocket 推送落地，并提供可选 Redis pub/sub 多实例广播。
 
 ## 当前落地服务
 
@@ -15,13 +15,13 @@
 | `xueyifang-trade` | `8400` | 订单、支付状态、退款、纠纷、钱包流水。 | `/order/**`、`/wallet/**`、`/dispute/**` |
 | `xueyifang-system` | `8500` | 专业、交易地点和系统配置读取。 | `/professional/**`、`/trade-location/**`、`/sys-config/**`、`/admin/professional/**`、`/admin/trade-location/**`、`/admin/sys-config/**` |
 | `xueyifang-file` | `8600` | 本地文件上传、批量上传、删除和公开访问。 | `/file/**`、`/api/file/**` |
-| `xueyifang-message` | `8700` | 聊天、通知和单实例 WebSocket 在线推送。 | `/chat/**`、`/notification/**`、`/api/ws` |
+| `xueyifang-message` | `8700` | 聊天、通知、单实例 WebSocket 在线推送和可选 Redis pub/sub 多实例广播。 | `/chat/**`、`/notification/**`、`/api/ws` |
 
 ## 后续增强服务能力
 
 | 能力 | 当前处理 | 后续触发条件 |
 | --- | --- | --- |
-| 消息推送多实例广播 | `xueyifang-message` 使用进程内 WebSocket 会话表，适合单实例或粘性会话。 | 多实例部署时接入 Redis pub/sub、消息队列广播或网关粘性会话。 |
+| 消息推送多实例广播 | `xueyifang-message` 默认使用进程内 WebSocket 会话表，并已支持可选 Redis pub/sub 广播。 | 高并发或强可靠通知场景再评估消息队列广播、粘性会话和离线补偿。 |
 
 ## 边界理由
 

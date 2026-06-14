@@ -23,6 +23,12 @@ spring:
     url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/xueyifang?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
     username: ${MYSQL_USERNAME:xueyifang}
     password: ${MYSQL_PASSWORD:xueyifang}
+  data:
+    redis:
+      host: ${XUEYIFANG_REDIS_HOST:127.0.0.1}
+      port: ${XUEYIFANG_REDIS_PORT:6379}
+      password: ${XUEYIFANG_REDIS_PASSWORD:}
+      database: ${XUEYIFANG_REDIS_DATABASE:0}
 
 management:
   endpoints:
@@ -36,6 +42,12 @@ xueyifang:
       secret: ${XUEYIFANG_JWT_SECRET:xueyifang-secret-key-2025-graduation-project}
       expiration: ${XUEYIFANG_JWT_EXPIRATION:604800000ms}
       issuer: ${XUEYIFANG_JWT_ISSUER:xueyifang}
+  message:
+    push:
+      redis:
+        enabled: ${XUEYIFANG_MESSAGE_REDIS_PUSH_ENABLED:false}
+        channel: ${XUEYIFANG_MESSAGE_REDIS_PUSH_CHANNEL:xueyifang:message:realtime}
+        instance-id: ${XUEYIFANG_MESSAGE_INSTANCE_ID:${spring.application.name}-${random.uuid}}
 
 logging:
   pattern:
