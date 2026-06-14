@@ -60,6 +60,20 @@ spring:
           uri: lb://xueyifang-file
           predicates:
             - Path=/file/**
+        - id: xueyifang-message
+          uri: lb://xueyifang-message
+          predicates:
+            - Path=/chat/**,/notification/**
+        - id: xueyifang-message-ws-api-compat
+          uri: lb:ws://xueyifang-message
+          predicates:
+            - Path=/api/ws,/api/ws/**
+          filters:
+            - StripPrefix=1
+        - id: xueyifang-message-ws
+          uri: lb:ws://xueyifang-message
+          predicates:
+            - Path=/ws,/ws/**
 
 management:
   endpoints:

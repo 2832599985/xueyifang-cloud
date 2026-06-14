@@ -13,7 +13,7 @@
 - 项目目标：将原 `xueyifang` 单体项目重构为 Spring Cloud 架构。
 - 原后端项目：`2832599985/xueyifang-backend`
 - 原前端项目：`2832599985/xueyifang-frontend`
-- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典和文件能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口。
+- 当前状态：阶段 4 认证与用户迁移进行中，阶段 5 服务市场、交易链路、系统字典、文件能力和消息能力已启动；阶段 3 基础设施已完成，已新增 JWT 公共能力、Gateway Bearer Token 校验、Servlet 用户上下文解析、Auth 登录/注册/刷新/登出、注册开关、Redis Token 黑名单、User 当前用户资料和发布权限接口，`xueyifang-service` 已提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态，`xueyifang-trade` 已提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口，`xueyifang-system` 已提供专业、交易地点、注册开关和后台系统配置维护接口，`xueyifang-file` 已提供本地文件上传、批量上传、删除和公开访问接口，`xueyifang-message` 已提供聊天、通知和单实例 WebSocket 在线推送。
 
 ## 根目录索引
 
@@ -36,6 +36,7 @@
 | `docs/trade-api-contract.md` | 文档 | 阶段 5 交易服务接口契约，记录订单最短链路和资金流状态约定。 |
 | `docs/system-api-contract.md` | 文档 | 阶段 5 系统字典与配置接口契约，记录专业、交易地点和系统配置接口。 |
 | `docs/file-api-contract.md` | 文档 | 阶段 5 文件服务接口契约，记录上传、批量上传、删除、查看和网关兼容路径。 |
+| `docs/message-api-contract.md` | 文档 | 阶段 5 消息服务接口契约，记录聊天、通知、WebSocket 和后续通知回接策略。 |
 | `deploy/` | 目录 | Docker、Nacos、数据库等部署配置。 |
 | `deploy/docker/.env.example` | 配置 | 本地 Docker Compose 和应用环境变量示例，包含 MySQL、Redis、Nacos 与 JWT 配置。 |
 | `deploy/docker/docker-compose.yml` | 配置 | 本地 MySQL、Redis、Nacos 基础设施，并挂载 MySQL 初始化脚本。 |
@@ -43,6 +44,7 @@
 | `deploy/docker/mysql/init/002-service.sql` | SQL | 本地 MySQL 初始化 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review` 表，供服务市场使用。 |
 | `deploy/docker/mysql/init/003-trade.sql` | SQL | 本地 MySQL 初始化 `service_order`、`service_order_log`、`service_dispute` 和 `wallet_transaction` 表，供交易服务使用，并包含退款和纠纷状态查询索引。 |
 | `deploy/docker/mysql/init/004-system.sql` | SQL | 本地 MySQL 初始化 `professional`、`trade_location` 和 `sys_config` 表，供系统服务使用。 |
+| `deploy/docker/mysql/init/005-message.sql` | SQL | 本地 MySQL 初始化 `user_chat` 和 `notification` 表，供消息服务使用。 |
 | `scripts/` | 目录 | 后续放本地开发、检查和迁移辅助脚本。 |
 | `xueyifang-common/` | 目录 | 计划中的公共模块聚合目录。 |
 | `xueyifang-gateway/` | 目录 | 计划中的网关服务。 |
@@ -52,6 +54,7 @@
 | `xueyifang-trade/` | 目录 | 交易模块，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
 | `xueyifang-system/` | 目录 | 系统模块，承载专业、交易地点和系统配置。 |
 | `xueyifang-file/` | 目录 | 文件模块，承载本地文件上传、批量上传、删除和公开访问。 |
+| `xueyifang-message/` | 目录 | 消息模块，承载聊天、通知和单实例 WebSocket 在线推送。 |
 
 ## 计划模块索引
 
@@ -66,6 +69,7 @@
 | `xueyifang-trade` | 已创建 | 交易服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单定时任务、买卖家订单列表、详情、钱包余额、钱包流水、充值和提现接口。 |
 | `xueyifang-system` | 已创建 | 系统服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、专业字典、交易地点、注册开关和后台系统配置维护接口。 |
 | `xueyifang-file` | 已创建 | 文件服务，当前包含 Spring Boot 启动类、本地存储配置、单文件上传、批量上传、删除和公开查看接口，并通过网关兼容 `/api/file/**`。 |
+| `xueyifang-message` | 已创建 | 消息服务，当前包含 Spring Boot 启动类、MySQL/JDBC 接入、聊天发送、聊天记录、会话列表、通知列表、未读数、标记已读和 `/api/ws` 单实例 WebSocket 兼容入口。 |
 
 ## 关键文件索引
 
@@ -98,7 +102,7 @@
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/auth/RedisReactiveTokenBlacklistService.java` | Gateway Redis Token 黑名单查询实现。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayAuthFilter.java` | Gateway Bearer Token 校验、错误响应和 `X-User-*` 用户上下文透传。 |
 | `xueyifang-gateway/src/main/java/com/xueyifang/cloud/gateway/filter/GatewayRequestIdFilter.java` | Gateway requestId 生成、透传、响应回写和 MDC 写入。 |
-| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由、旧 `/auth/*` 用户资料路径兼容路由、系统服务路由和文件服务 `/api/file/**` 兼容路由配置。 |
+| `xueyifang-gateway/src/main/resources/application.yml` | 网关端口、服务名、Nacos 接入、JWT、`lb://` 路由、旧 `/auth/*` 用户资料路径兼容路由、系统服务路由、文件服务 `/api/file/**` 兼容路由和消息服务 `/api/ws` 兼容路由配置。 |
 | `xueyifang-auth/pom.xml` | 认证服务 POM。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/XueyifangAuthApplication.java` | 认证服务启动类。 |
 | `xueyifang-auth/src/main/java/com/xueyifang/cloud/auth/controller/AuthController.java` | 认证入口，提供 `POST /auth/register`、`POST /auth/login` 和 `POST /auth/logout`。 |
@@ -187,9 +191,23 @@
 | `xueyifang-file/src/main/java/com/xueyifang/cloud/file/storage/LocalFileStorageService.java` | 本地文件存储实现，负责落盘、删除、查看和路径遍历防护。 |
 | `xueyifang-file/src/main/resources/application.yml` | 文件服务端口、服务名、Nacos、上传大小和本地存储配置。 |
 | `xueyifang-file/src/test/java/com/xueyifang/cloud/file/service/FileServiceTest.java` | 文件服务单元测试，覆盖上传、批量上传、删除、类型/大小校验和路径安全。 |
+| `xueyifang-message/pom.xml` | 消息服务 POM，依赖公共 Web、JDBC、Spring MVC、WebSocket、Actuator 和 Nacos。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/XueyifangMessageApplication.java` | 消息服务启动类。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/controller/ChatController.java` | 聊天入口，提供 `/chat/send`、`/chat/messages/{userId}` 和 `/chat/conversations`。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/controller/NotificationController.java` | 通知入口，提供 `/notification/my-notifications`、`/notification/unreadCount`、`/notification/{id}/read` 和 `/notification/readAll`。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/repository/JdbcMessageRepository.java` | 基于 `JdbcTemplate` 的 `user_chat`、`notification` 和用户轻量信息数据访问实现。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/service/ChatService.java` | 聊天业务逻辑，校验登录用户、接收者、消息类型，读取聊天记录时标记未读消息。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/service/NotificationService.java` | 通知业务逻辑，支持通知创建、查询、未读数和已读状态。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/MessageWebSocketConfiguration.java` | WebSocket `/ws` 注册，兼容 Gateway 用户头和旧前端 `?token=` 握手。 |
+| `xueyifang-message/src/main/java/com/xueyifang/cloud/message/websocket/MessageWebSocketSessionManager.java` | 单实例 WebSocket 会话表和在线推送。 |
+| `xueyifang-message/src/main/resources/application.yml` | 消息服务端口、服务名、Nacos、MySQL 和 JWT 配置。 |
+| `xueyifang-message/src/test/java/com/xueyifang/cloud/message/service/ChatServiceTest.java` | 聊天服务单元测试，覆盖发送、会话未读、禁用接收者、自发消息和登录校验。 |
+| `xueyifang-message/src/test/java/com/xueyifang/cloud/message/service/NotificationServiceTest.java` | 通知服务单元测试，覆盖创建推送、未读数、已读权限、通知类型和登录校验。 |
 
 ## Todo
 
 - 资金规则复杂后再评估是否拆出钱包服务。
+- 将交易、纠纷、权限审核和服务审核流程的通知生产动作回接到 `xueyifang-message`。
+- 多实例部署 `xueyifang-message` 前，补 Redis pub/sub、消息队列广播或网关粘性会话方案。
 - 启动本地 Nacos 后，做一次网关到各业务服务的健康检查联通验证。
 - 明确 Nacos 生产环境鉴权和外置数据库方案。
