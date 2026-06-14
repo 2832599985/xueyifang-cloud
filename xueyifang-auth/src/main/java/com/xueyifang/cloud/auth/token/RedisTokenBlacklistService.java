@@ -2,6 +2,7 @@ package com.xueyifang.cloud.auth.token;
 
 import com.xueyifang.cloud.common.core.auth.TokenBlacklistKeys;
 import com.xueyifang.cloud.common.core.auth.TokenBlacklistService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ public class RedisTokenBlacklistService implements TokenBlacklistService {
 
     private final Clock clock;
 
+    @Autowired
     public RedisTokenBlacklistService(StringRedisTemplate redisTemplate) {
         this(redisTemplate, Clock.systemUTC());
     }
