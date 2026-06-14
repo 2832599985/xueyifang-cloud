@@ -80,6 +80,8 @@ public class TradeOrderService {
 
     private static final int OPERATOR_ROLE_ADMIN = 3;
 
+    private static final int OPERATOR_ROLE_SYSTEM = 4;
+
     private static final int ADMIN_ROLE = 2;
 
     private static final int DEFAULT_PAGE_NUM = 1;
@@ -246,39 +248,7 @@ public class TradeOrderService {
         }
         ensureNoActiveDispute(order.id());
 
-        BigDecimal amount = order.frozenAmount();
-        if (amount == null || amount.signum() <= 0) {
-            throw new BusinessException(ErrorCode.WALLET_FROZEN_NOT_ENOUGH);
-        }
-
-        TradeUserWallet first = lockUserFirst(order.buyerId(), order.sellerId());
-        TradeUserWallet second = lockUserSecond(order.buyerId(), order.sellerId());
-        TradeUserWallet buyer = order.buyerId().equals(first.userId()) ? first : second;
-        TradeUserWallet seller = order.sellerId().equals(first.userId()) ? first : second;
-        if (buyer.frozenAmount().compareTo(amount) < 0) {
-            throw new BusinessException(ErrorCode.WALLET_FROZEN_NOT_ENOUGH);
-        }
-
-        BigDecimal buyerFrozenAfter = buyer.frozenAmount().subtract(amount);
-        BigDecimal sellerBalanceAfter = seller.walletBalance().add(amount);
-        if (!tradeOrderRepository.updateUserWallet(buyer.userId(), buyer.walletBalance(), buyerFrozenAfter)) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "buyer wallet update failed");
-        }
-        if (!tradeOrderRepository.updateUserWallet(seller.userId(), sellerBalanceAfter, seller.frozenAmount())) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "seller wallet update failed");
-        }
-
-        recordWalletTransaction(buyer.userId(), TRANSACTION_UNFREEZE, amount,
-                buyer.walletBalance(), buyer.walletBalance(), buyer.frozenAmount(), buyerFrozenAfter,
-                order.id(), "确认收货解冻资金 " + order.orderNumber());
-        recordWalletTransaction(seller.userId(), TRANSACTION_INCOME, amount,
-                seller.walletBalance(), sellerBalanceAfter, seller.frozenAmount(), seller.frozenAmount(),
-                order.id(), "订单收入 " + order.orderNumber());
-
-        if (!tradeOrderRepository.completeOrder(order.id(), LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order status changed");
-        }
-        recordLog(order.id(), ORDER_PENDING_RECEIPT, ORDER_COMPLETED, user.userId(), OPERATOR_ROLE_BUYER,
+        settleOrder(order, user.userId(), OPERATOR_ROLE_BUYER,
                 "BUYER_CONFIRM", "买家确认收货，交易完成，资金已结算给卖家");
     }
 
@@ -360,6 +330,51 @@ public class TradeOrderService {
         String normalizedReason = requireText(reason, "reason");
         processRefund(order, normalizedReason, user.userId(), OPERATOR_ROLE_ADMIN,
                 "ADMIN_REFUND", "管理员强制退款：" + normalizedReason);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean systemCancelUnpaidOrder(Long orderId, int timeoutHours) {
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!Integer.valueOf(ORDER_UNPAID).equals(order.orderStatus())
+                || !Integer.valueOf(PAYMENT_UNPAID).equals(order.paymentStatus())) {
+            return false;
+        }
+        if (!tradeOrderRepository.cancelOrder(order.id())) {
+            return false;
+        }
+        recordLog(order.id(), ORDER_UNPAID, ORDER_CANCELLED, null, OPERATOR_ROLE_SYSTEM,
+                "AUTO_CANCEL", String.format("系统自动取消：订单超过%d小时未支付", timeoutHours));
+        return true;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean systemConfirmReceipt(Long orderId, int timeoutDays) {
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!Integer.valueOf(ORDER_PENDING_RECEIPT).equals(order.orderStatus())
+                || !Integer.valueOf(PAYMENT_PAID).equals(order.paymentStatus())
+                || Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())
+                || tradeDisputeRepository.existsActiveByOrderId(order.id())) {
+            return false;
+        }
+        settleOrder(order, null, OPERATOR_ROLE_SYSTEM,
+                "AUTO_CONFIRM_RECEIPT", String.format("系统自动确认收货：发货超过%d天", timeoutDays));
+        return true;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public boolean systemRefundTimeoutOrder(Long orderId, int timeoutDays) {
+        TradeOrder order = getOrderForUpdate(requirePositiveId(orderId, "orderId"));
+        if (!Integer.valueOf(REFUND_PENDING).equals(order.refundStatus())
+                || !Integer.valueOf(PAYMENT_PAID).equals(order.paymentStatus())
+                || (!Integer.valueOf(ORDER_PENDING_SHIP).equals(order.orderStatus())
+                && !Integer.valueOf(ORDER_PENDING_RECEIPT).equals(order.orderStatus()))
+                || tradeDisputeRepository.existsActiveByOrderId(order.id())) {
+            return false;
+        }
+        String reason = normalizeOptional(order.refundReason());
+        processRefund(order, reason == null ? "卖家超时未处理退款申请" : reason, null, OPERATOR_ROLE_SYSTEM,
+                "AUTO_REFUND", String.format("卖家超过%d天未处理退款申请，系统自动退款", timeoutDays));
+        return true;
     }
 
     public OrderListResponse listMyOrders(Integer pageNum, Integer pageSize, Integer orderStatus) {
@@ -451,6 +466,44 @@ public class TradeOrderService {
             throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order refund status changed");
         }
         recordLog(order.id(), order.orderStatus(), ORDER_FAILED, operatorId, operatorRole,
+                actionType, logMessage);
+    }
+
+    private void settleOrder(TradeOrder order, Long operatorId,
+                             Integer operatorRole, String actionType, String logMessage) {
+        BigDecimal amount = order.frozenAmount();
+        if (amount == null || amount.signum() <= 0) {
+            throw new BusinessException(ErrorCode.WALLET_FROZEN_NOT_ENOUGH);
+        }
+
+        TradeUserWallet first = lockUserFirst(order.buyerId(), order.sellerId());
+        TradeUserWallet second = lockUserSecond(order.buyerId(), order.sellerId());
+        TradeUserWallet buyer = order.buyerId().equals(first.userId()) ? first : second;
+        TradeUserWallet seller = order.sellerId().equals(first.userId()) ? first : second;
+        if (buyer.frozenAmount().compareTo(amount) < 0) {
+            throw new BusinessException(ErrorCode.WALLET_FROZEN_NOT_ENOUGH);
+        }
+
+        BigDecimal buyerFrozenAfter = buyer.frozenAmount().subtract(amount);
+        BigDecimal sellerBalanceAfter = seller.walletBalance().add(amount);
+        if (!tradeOrderRepository.updateUserWallet(buyer.userId(), buyer.walletBalance(), buyerFrozenAfter)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "buyer wallet update failed");
+        }
+        if (!tradeOrderRepository.updateUserWallet(seller.userId(), sellerBalanceAfter, seller.frozenAmount())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "seller wallet update failed");
+        }
+
+        recordWalletTransaction(buyer.userId(), TRANSACTION_UNFREEZE, amount,
+                buyer.walletBalance(), buyer.walletBalance(), buyer.frozenAmount(), buyerFrozenAfter,
+                order.id(), "确认收货解冻资金 " + order.orderNumber());
+        recordWalletTransaction(seller.userId(), TRANSACTION_INCOME, amount,
+                seller.walletBalance(), sellerBalanceAfter, seller.frozenAmount(), seller.frozenAmount(),
+                order.id(), "订单收入 " + order.orderNumber());
+
+        if (!tradeOrderRepository.completeOrder(order.id(), LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_ERROR, "order status changed");
+        }
+        recordLog(order.id(), order.orderStatus(), ORDER_COMPLETED, operatorId, operatorRole,
                 actionType, logMessage);
     }
 

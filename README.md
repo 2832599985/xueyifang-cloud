@@ -22,7 +22,7 @@
 | `xueyifang-auth` | 认证服务。 |
 | `xueyifang-user` | 用户服务。 |
 | `xueyifang-service` | 服务市场，承载服务发布、浏览、收藏和评价展示。 |
-| `xueyifang-trade` | 交易服务，承载订单、钱包流水、退款和纠纷。 |
+| `xueyifang-trade` | 交易服务，承载订单、钱包流水、退款、纠纷和订单定时任务。 |
 
 ## 已落地基础能力
 
@@ -36,7 +36,7 @@
 - `xueyifang-auth` 已接入 `user` 表登录/注册、BCrypt 密码校验、Token 刷新和 Redis 黑名单登出，并按 `user.publish_permission` 签发权限声明。
 - `xueyifang-user` 已接入 `user` 表当前用户、资料更新、改密和发布权限状态接口，并兼容旧 `/auth/currentUser`、`/auth/updateProfile`、`/auth/changePassword` 路径。
 - `xueyifang-service` 已接入 `service`、`service_image`、`service_tag`、`service_favorite` 和 `service_review` 表，提供服务列表、详情、标签读取、服务发布、我的服务、编辑、上下架、逻辑删除、收藏、我的收藏、评价创建、评价列表和订单评价状态接口。
-- `xueyifang-trade` 已接入 `service_order`、`service_order_log` 和 `wallet_transaction` 表，提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、买家订单、卖家订单、订单详情、钱包余额、钱包流水、充值和提现接口。
+- `xueyifang-trade` 已接入 `service_order`、`service_order_log`、`service_dispute` 和 `wallet_transaction` 表，提供订单创建、支付、取消、发货、确认完成、退款申请、卖家处理退款、纠纷发起与处理、订单超时任务、买家订单、卖家订单、订单详情、钱包余额、钱包流水、充值和提现能力。
 - 认证与用户接口契约见 [docs/auth-user-api-contract.md](docs/auth-user-api-contract.md)。
 - 服务市场接口契约见 [docs/service-market-api-contract.md](docs/service-market-api-contract.md)。
 - 交易服务接口契约见 [docs/trade-api-contract.md](docs/trade-api-contract.md)。

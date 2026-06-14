@@ -67,6 +67,46 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
         return transactions;
     }
 
+    public void setOrderTimes(Long orderId, LocalDateTime createTime,
+                              LocalDateTime sellerShipTime, LocalDateTime refundRequestTime) {
+        TradeOrder order = orders.get(orderId);
+        if (order == null) {
+            return;
+        }
+        orders.put(orderId, new TradeOrder(
+                order.id(),
+                order.orderNumber(),
+                order.serviceId(),
+                order.buyerId(),
+                order.sellerId(),
+                order.quantity(),
+                order.unitPrice(),
+                order.totalAmount(),
+                order.tradeType(),
+                order.tradeLocationId(),
+                order.paymentStatus(),
+                order.orderStatus(),
+                order.frozenAmount(),
+                order.paymentMethod(),
+                order.paymentTime(),
+                sellerShipTime,
+                order.buyerConfirmTime(),
+                order.refundStatus(),
+                order.refundReason(),
+                refundRequestTime,
+                order.remark(),
+                createTime,
+                order.updateTime(),
+                order.serviceTitle(),
+                order.serviceDescription(),
+                order.serviceImage(),
+                order.buyerName(),
+                order.buyerAvatar(),
+                order.sellerName(),
+                order.sellerAvatar(),
+                order.isReviewed()));
+    }
+
     @Override
     public Optional<TradeServiceSnapshot> findServiceForOrder(Long serviceId) {
         return Optional.ofNullable(services.get(serviceId));
@@ -163,6 +203,45 @@ public class InMemoryTradeOrderRepository implements TradeOrderRepository {
                 .limit(query.limit())
                 .toList();
         return new OrderPage(records, matched.size());
+    }
+
+    @Override
+    public List<Long> findUnpaidOrderIdsCreatedAtOrBefore(LocalDateTime deadline, int limit) {
+        return orders.values().stream()
+                .filter(order -> Integer.valueOf(1).equals(order.orderStatus()))
+                .filter(order -> Integer.valueOf(1).equals(order.paymentStatus()))
+                .filter(order -> !order.createTime().isAfter(deadline))
+                .sorted(Comparator.comparing(TradeOrder::createTime).thenComparing(TradeOrder::id))
+                .limit(limit)
+                .map(TradeOrder::id)
+                .toList();
+    }
+
+    @Override
+    public List<Long> findPendingReceiptOrderIdsShippedAtOrBefore(LocalDateTime deadline, int limit) {
+        return orders.values().stream()
+                .filter(order -> Integer.valueOf(3).equals(order.orderStatus()))
+                .filter(order -> Integer.valueOf(2).equals(order.paymentStatus()))
+                .filter(order -> order.sellerShipTime() != null && !order.sellerShipTime().isAfter(deadline))
+                .filter(order -> !Integer.valueOf(1).equals(order.refundStatus()))
+                .sorted(Comparator.comparing(TradeOrder::sellerShipTime).thenComparing(TradeOrder::id))
+                .limit(limit)
+                .map(TradeOrder::id)
+                .toList();
+    }
+
+    @Override
+    public List<Long> findPendingRefundOrderIdsRequestedAtOrBefore(LocalDateTime deadline, int limit) {
+        return orders.values().stream()
+                .filter(order -> Integer.valueOf(1).equals(order.refundStatus()))
+                .filter(order -> Integer.valueOf(2).equals(order.paymentStatus()))
+                .filter(order -> Integer.valueOf(2).equals(order.orderStatus())
+                        || Integer.valueOf(3).equals(order.orderStatus()))
+                .filter(order -> order.refundRequestTime() != null && !order.refundRequestTime().isAfter(deadline))
+                .sorted(Comparator.comparing(TradeOrder::refundRequestTime).thenComparing(TradeOrder::id))
+                .limit(limit)
+                .map(TradeOrder::id)
+                .toList();
     }
 
     @Override

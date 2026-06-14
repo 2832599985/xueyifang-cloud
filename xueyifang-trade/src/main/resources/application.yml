@@ -30,6 +30,18 @@ management:
       exposure:
         include: health,info
 
+xueyifang:
+  trade:
+    tasks:
+      enabled: ${TRADE_ORDER_TASKS_ENABLED:true}
+      batch-size: ${TRADE_ORDER_TASK_BATCH_SIZE:100}
+      unpaid-timeout-hours: ${TRADE_ORDER_UNPAID_TIMEOUT_HOURS:24}
+      auto-confirm-receipt-days: ${TRADE_ORDER_AUTO_CONFIRM_RECEIPT_DAYS:7}
+      seller-refund-timeout-days: ${TRADE_ORDER_SELLER_REFUND_TIMEOUT_DAYS:3}
+      auto-cancel-cron: "${TRADE_ORDER_AUTO_CANCEL_CRON:0 */10 * * * ?}"
+      auto-confirm-cron: "${TRADE_ORDER_AUTO_CONFIRM_CRON:0 0 * * * ?}"
+      auto-refund-cron: "${TRADE_ORDER_AUTO_REFUND_CRON:0 30 * * * ?}"
+
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{requestId:-}]"

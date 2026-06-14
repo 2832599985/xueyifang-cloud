@@ -158,6 +158,75 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
     }
 
     @Override
+    public List<Long> findUnpaidOrderIdsCreatedAtOrBefore(LocalDateTime deadline, int limit) {
+        return jdbcTemplate.queryForList("""
+                        SELECT id
+                        FROM service_order
+                        WHERE order_status = 1
+                          AND payment_status = 1
+                          AND create_time <= ?
+                          AND is_deleted = 0
+                        ORDER BY create_time ASC, id ASC
+                        LIMIT ?
+                        """,
+                Long.class,
+                deadline,
+                limit);
+    }
+
+    @Override
+    public List<Long> findPendingReceiptOrderIdsShippedAtOrBefore(LocalDateTime deadline, int limit) {
+        return jdbcTemplate.queryForList("""
+                        SELECT o.id
+                        FROM service_order o
+                        WHERE o.order_status = 3
+                          AND o.payment_status = 2
+                          AND o.seller_ship_time IS NOT NULL
+                          AND o.seller_ship_time <= ?
+                          AND COALESCE(o.refund_status, 0) <> 1
+                          AND o.is_deleted = 0
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM service_dispute d
+                              WHERE d.order_id = o.id
+                                AND d.status = 1
+                                AND d.is_deleted = 0
+                          )
+                        ORDER BY o.seller_ship_time ASC, o.id ASC
+                        LIMIT ?
+                        """,
+                Long.class,
+                deadline,
+                limit);
+    }
+
+    @Override
+    public List<Long> findPendingRefundOrderIdsRequestedAtOrBefore(LocalDateTime deadline, int limit) {
+        return jdbcTemplate.queryForList("""
+                        SELECT o.id
+                        FROM service_order o
+                        WHERE o.refund_status = 1
+                          AND o.payment_status = 2
+                          AND o.order_status IN (2, 3)
+                          AND o.refund_request_time IS NOT NULL
+                          AND o.refund_request_time <= ?
+                          AND o.is_deleted = 0
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM service_dispute d
+                              WHERE d.order_id = o.id
+                                AND d.status = 1
+                                AND d.is_deleted = 0
+                          )
+                        ORDER BY o.refund_request_time ASC, o.id ASC
+                        LIMIT ?
+                        """,
+                Long.class,
+                deadline,
+                limit);
+    }
+
+    @Override
     public boolean markOrderPaid(Long orderId, BigDecimal frozenAmount, Integer paymentMethod, LocalDateTime paymentTime) {
         int updated = jdbcTemplate.update("""
                         UPDATE service_order

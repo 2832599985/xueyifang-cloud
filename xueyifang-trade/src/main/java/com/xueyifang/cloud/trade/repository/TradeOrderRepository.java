@@ -2,6 +2,7 @@ package com.xueyifang.cloud.trade.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface TradeOrderRepository {
@@ -21,6 +22,12 @@ public interface TradeOrderRepository {
     Optional<TradeOrder> findOrderForUpdate(Long orderId);
 
     OrderPage findOrders(OrderListQuery query);
+
+    List<Long> findUnpaidOrderIdsCreatedAtOrBefore(LocalDateTime deadline, int limit);
+
+    List<Long> findPendingReceiptOrderIdsShippedAtOrBefore(LocalDateTime deadline, int limit);
+
+    List<Long> findPendingRefundOrderIdsRequestedAtOrBefore(LocalDateTime deadline, int limit);
 
     boolean markOrderPaid(Long orderId, BigDecimal frozenAmount, Integer paymentMethod, LocalDateTime paymentTime);
 
