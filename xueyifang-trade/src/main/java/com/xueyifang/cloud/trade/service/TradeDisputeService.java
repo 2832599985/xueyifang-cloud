@@ -8,6 +8,7 @@ import com.xueyifang.cloud.trade.dto.DisputeCreateRequest;
 import com.xueyifang.cloud.trade.dto.DisputeHandleRequest;
 import com.xueyifang.cloud.trade.dto.DisputeListResponse;
 import com.xueyifang.cloud.trade.dto.DisputeResponse;
+import com.xueyifang.cloud.trade.notification.TradeNotificationPublisher;
 import com.xueyifang.cloud.trade.repository.DisputeCreateCommand;
 import com.xueyifang.cloud.trade.repository.DisputeHandleCommand;
 import com.xueyifang.cloud.trade.repository.DisputeListQuery;
@@ -56,12 +57,16 @@ public class TradeDisputeService {
 
     private final TradeOrderService tradeOrderService;
 
+    private final TradeNotificationPublisher notificationPublisher;
+
     public TradeDisputeService(TradeOrderRepository tradeOrderRepository,
                                TradeDisputeRepository tradeDisputeRepository,
-                               TradeOrderService tradeOrderService) {
+                               TradeOrderService tradeOrderService,
+                               TradeNotificationPublisher notificationPublisher) {
         this.tradeOrderRepository = tradeOrderRepository;
         this.tradeDisputeRepository = tradeDisputeRepository;
         this.tradeOrderService = tradeOrderService;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -98,6 +103,8 @@ public class TradeDisputeService {
                 normalizeOptional(request.evidence())));
         recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_BUYER,
                 "DISPUTE_CREATE", "买家发起纠纷：" + reason);
+        publishDisputeNotification(order.sellerId(), "收到订单纠纷",
+                "订单 " + order.orderNumber() + " 收到买家发起的纠纷，请等待管理员处理。", disputeId);
         return disputeId;
     }
 
@@ -165,6 +172,10 @@ public class TradeDisputeService {
             }
             recordLog(dispute.orderId(), dispute.orderStatus(), ORDER_FAILED, user.userId(), OPERATOR_ROLE_ADMIN,
                     "DISPUTE_REFUND", "管理员处理纠纷并退款：" + remark);
+            publishDisputeNotification(dispute.complainantId(), "纠纷处理完成",
+                    "订单 " + dispute.orderNumber() + " 的纠纷已处理，管理员支持退款。", dispute.id());
+            publishDisputeNotification(dispute.respondentId(), "纠纷处理完成",
+                    "订单 " + dispute.orderNumber() + " 的纠纷已处理，管理员支持买家退款。", dispute.id());
             return;
         }
 
@@ -175,6 +186,10 @@ public class TradeDisputeService {
         }
         recordLog(dispute.orderId(), dispute.orderStatus(), dispute.orderStatus(), user.userId(), OPERATOR_ROLE_ADMIN,
                 "DISPUTE_REJECT", "管理员驳回纠纷：" + remark);
+        publishDisputeNotification(dispute.complainantId(), "纠纷处理完成",
+                "订单 " + dispute.orderNumber() + " 的纠纷已被管理员驳回。", dispute.id());
+        publishDisputeNotification(dispute.respondentId(), "纠纷处理完成",
+                "订单 " + dispute.orderNumber() + " 的纠纷已被管理员驳回。", dispute.id());
     }
 
     private void recordLog(Long orderId, Integer oldStatus, Integer newStatus, Long operatorId,
@@ -187,6 +202,10 @@ public class TradeDisputeService {
                 operatorRole,
                 actionType,
                 remark));
+    }
+
+    private void publishDisputeNotification(Long recipientId, String title, String content, Long disputeId) {
+        notificationPublisher.publishDisputeNotification(recipientId, title, content, disputeId);
     }
 
     private LoginUserContext requireCurrentUser() {

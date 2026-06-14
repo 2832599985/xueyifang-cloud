@@ -18,6 +18,7 @@ import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
 import com.xueyifang.cloud.trade.support.InMemoryTradeDisputeRepository;
 import com.xueyifang.cloud.trade.support.InMemoryTradeOrderRepository;
+import com.xueyifang.cloud.trade.support.RecordingTradeNotificationPublisher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,11 +35,14 @@ class TradeDisputeServiceTest {
     private final InMemoryTradeDisputeRepository disputeRepository =
             new InMemoryTradeDisputeRepository(orderRepository);
 
+    private final RecordingTradeNotificationPublisher notificationPublisher =
+            new RecordingTradeNotificationPublisher();
+
     private final TradeOrderService tradeOrderService =
-            new TradeOrderService(orderRepository, disputeRepository);
+            new TradeOrderService(orderRepository, disputeRepository, notificationPublisher);
 
     private final TradeDisputeService tradeDisputeService =
-            new TradeDisputeService(orderRepository, disputeRepository, tradeOrderService);
+            new TradeDisputeService(orderRepository, disputeRepository, tradeOrderService, notificationPublisher);
 
     @BeforeEach
     void setUp() {
@@ -101,6 +105,11 @@ class TradeDisputeServiceTest {
         DisputeResponse detail = tradeDisputeService.getDisputeDetail(disputeId);
         assertThat(detail.buyerName()).isEqualTo("Buyer");
         assertThat(detail.sellerName()).isEqualTo("Seller");
+        assertThat(notificationPublisher.notifications()).anySatisfy(notification -> {
+            assertThat(notification.notificationType()).isEqualTo(4);
+            assertThat(notification.recipientId()).isEqualTo(10L);
+            assertThat(notification.relatedId()).isEqualTo(disputeId);
+        });
 
         assertThatThrownBy(() -> tradeOrderService.confirmOrder(orderId))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
@@ -131,6 +140,11 @@ class TradeDisputeServiceTest {
         assertThat(handled.total()).isEqualTo(1);
         assertThat(orderRepository.logs()).extracting("actionType")
                 .contains("ADMIN_REFUND", "DISPUTE_REFUND");
+        assertThat(notificationPublisher.notifications()).anySatisfy(notification -> {
+            assertThat(notification.notificationType()).isEqualTo(4);
+            assertThat(notification.recipientId()).isEqualTo(20L);
+            assertThat(notification.relatedId()).isEqualTo(disputeId);
+        });
     }
 
     @Test

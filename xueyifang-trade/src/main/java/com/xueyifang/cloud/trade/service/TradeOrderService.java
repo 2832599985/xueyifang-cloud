@@ -10,6 +10,7 @@ import com.xueyifang.cloud.trade.dto.OrderListResponse;
 import com.xueyifang.cloud.trade.dto.OrderPayRequest;
 import com.xueyifang.cloud.trade.dto.OrderRefundRequest;
 import com.xueyifang.cloud.trade.dto.SellerHandleRefundRequest;
+import com.xueyifang.cloud.trade.notification.TradeNotificationPublisher;
 import com.xueyifang.cloud.trade.repository.OrderCreateCommand;
 import com.xueyifang.cloud.trade.repository.OrderListQuery;
 import com.xueyifang.cloud.trade.repository.OrderLogCommand;
@@ -100,10 +101,14 @@ public class TradeOrderService {
 
     private final TradeDisputeRepository tradeDisputeRepository;
 
+    private final TradeNotificationPublisher notificationPublisher;
+
     public TradeOrderService(TradeOrderRepository tradeOrderRepository,
-                             TradeDisputeRepository tradeDisputeRepository) {
+                             TradeDisputeRepository tradeDisputeRepository,
+                             TradeNotificationPublisher notificationPublisher) {
         this.tradeOrderRepository = tradeOrderRepository;
         this.tradeDisputeRepository = tradeDisputeRepository;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -130,8 +135,9 @@ public class TradeOrderService {
         }
 
         BigDecimal totalAmount = service.price().multiply(BigDecimal.valueOf(quantity));
+        String orderNumber = generateOrderNumber();
         Long orderId = tradeOrderRepository.createOrder(new OrderCreateCommand(
-                generateOrderNumber(),
+                orderNumber,
                 service.serviceId(),
                 user.userId(),
                 service.publisherId(),
@@ -149,6 +155,9 @@ public class TradeOrderService {
 
         recordLog(orderId, null, ORDER_UNPAID, user.userId(), OPERATOR_ROLE_BUYER,
                 "CREATE", "创建订单");
+        publishOrderNotification(service.publisherId(), "收到新订单",
+                "你的服务「" + service.title() + "」收到一笔新订单，订单号 " + orderNumber + "，待买家支付。",
+                orderId);
         return orderId;
     }
 
@@ -194,6 +203,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), ORDER_UNPAID, ORDER_PENDING_SHIP, user.userId(), OPERATOR_ROLE_BUYER,
                 "PAY", "买家支付，资金冻结，等待卖家发货");
+        publishOrderNotification(order.sellerId(), "订单已支付",
+                "订单 " + order.orderNumber() + " 已支付，请及时发货。", order.id());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -211,6 +222,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), ORDER_UNPAID, ORDER_CANCELLED, user.userId(), OPERATOR_ROLE_BUYER,
                 "CANCEL", "买家取消未支付订单");
+        publishOrderNotification(order.sellerId(), "订单已取消",
+                "订单 " + order.orderNumber() + " 已由买家取消。", order.id());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -231,6 +244,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), ORDER_PENDING_SHIP, ORDER_PENDING_RECEIPT, user.userId(), OPERATOR_ROLE_SELLER,
                 "SELLER_SHIP", "卖家已发货，等待买家确认收货");
+        publishOrderNotification(order.buyerId(), "卖家已发货",
+                "订单 " + order.orderNumber() + " 已发货，请收到服务后确认完成。", order.id());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -284,6 +299,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_BUYER,
                 "REFUND_REQUEST", "买家申请退款：" + reason);
+        publishOrderNotification(order.sellerId(), "收到退款申请",
+                "订单 " + order.orderNumber() + " 收到买家退款申请，请及时处理。", order.id());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -314,6 +331,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_SELLER,
                 "SELLER_REJECT_REFUND", "卖家拒绝退款：" + rejectReason);
+        publishOrderNotification(order.buyerId(), "退款申请被拒绝",
+                "订单 " + order.orderNumber() + " 的退款申请被卖家拒绝，你可以再次沟通或发起纠纷。", order.id());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -344,6 +363,9 @@ public class TradeOrderService {
         }
         recordLog(order.id(), ORDER_UNPAID, ORDER_CANCELLED, null, OPERATOR_ROLE_SYSTEM,
                 "AUTO_CANCEL", String.format("系统自动取消：订单超过%d小时未支付", timeoutHours));
+        publishOrderNotification(order.buyerId(), "订单已自动取消",
+                String.format("订单 %s 超过%d小时未支付，系统已自动取消。", order.orderNumber(), timeoutHours),
+                order.id());
         return true;
     }
 
@@ -467,6 +489,8 @@ public class TradeOrderService {
         }
         recordLog(order.id(), order.orderStatus(), ORDER_FAILED, operatorId, operatorRole,
                 actionType, logMessage);
+        publishOrderNotification(order.buyerId(), "退款已完成",
+                "订单 " + order.orderNumber() + " 已退款，退款原因：" + reason, order.id());
     }
 
     private void settleOrder(TradeOrder order, Long operatorId,
@@ -505,6 +529,12 @@ public class TradeOrderService {
         }
         recordLog(order.id(), order.orderStatus(), ORDER_COMPLETED, operatorId, operatorRole,
                 actionType, logMessage);
+        publishOrderNotification(order.sellerId(), "订单已完成",
+                "订单 " + order.orderNumber() + " 已完成，订单收入已结算。", order.id());
+        if (Integer.valueOf(OPERATOR_ROLE_SYSTEM).equals(operatorRole)) {
+            publishOrderNotification(order.buyerId(), "订单已自动完成",
+                    "订单 " + order.orderNumber() + " 已由系统自动确认完成。", order.id());
+        }
     }
 
     private void recordLog(Long orderId, Integer oldStatus, Integer newStatus, Long operatorId,
@@ -534,6 +564,10 @@ public class TradeOrderService {
                 relatedOrderId,
                 generateTransactionNumber(userId),
                 remark));
+    }
+
+    private void publishOrderNotification(Long recipientId, String title, String content, Long orderId) {
+        notificationPublisher.publishOrderNotification(recipientId, title, content, orderId);
     }
 
     private LoginUserContext requireCurrentUser() {

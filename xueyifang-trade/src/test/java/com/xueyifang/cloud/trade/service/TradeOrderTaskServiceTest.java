@@ -13,6 +13,7 @@ import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
 import com.xueyifang.cloud.trade.support.InMemoryTradeDisputeRepository;
 import com.xueyifang.cloud.trade.support.InMemoryTradeOrderRepository;
+import com.xueyifang.cloud.trade.support.RecordingTradeNotificationPublisher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,10 +34,14 @@ class TradeOrderTaskServiceTest {
 
     private final InMemoryTradeDisputeRepository disputeRepository = new InMemoryTradeDisputeRepository(repository);
 
-    private final TradeOrderService tradeOrderService = new TradeOrderService(repository, disputeRepository);
+    private final RecordingTradeNotificationPublisher notificationPublisher =
+            new RecordingTradeNotificationPublisher();
+
+    private final TradeOrderService tradeOrderService =
+            new TradeOrderService(repository, disputeRepository, notificationPublisher);
 
     private final TradeDisputeService tradeDisputeService =
-            new TradeDisputeService(repository, disputeRepository, tradeOrderService);
+            new TradeDisputeService(repository, disputeRepository, tradeOrderService, notificationPublisher);
 
     private final TradeOrderTaskProperties properties = new TradeOrderTaskProperties();
 

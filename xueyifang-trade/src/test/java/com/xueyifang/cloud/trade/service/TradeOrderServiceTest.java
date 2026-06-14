@@ -15,6 +15,7 @@ import com.xueyifang.cloud.trade.repository.TradeServiceSnapshot;
 import com.xueyifang.cloud.trade.repository.TradeUserWallet;
 import com.xueyifang.cloud.trade.support.InMemoryTradeDisputeRepository;
 import com.xueyifang.cloud.trade.support.InMemoryTradeOrderRepository;
+import com.xueyifang.cloud.trade.support.RecordingTradeNotificationPublisher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,11 @@ class TradeOrderServiceTest {
 
     private final InMemoryTradeDisputeRepository disputeRepository = new InMemoryTradeDisputeRepository(repository);
 
-    private final TradeOrderService tradeOrderService = new TradeOrderService(repository, disputeRepository);
+    private final RecordingTradeNotificationPublisher notificationPublisher =
+            new RecordingTradeNotificationPublisher();
+
+    private final TradeOrderService tradeOrderService =
+            new TradeOrderService(repository, disputeRepository, notificationPublisher);
 
     @BeforeEach
     void setUp() {
@@ -93,6 +98,9 @@ class TradeOrderServiceTest {
         assertThat(order.paymentStatus()).isEqualTo(1);
         assertThat(order.remark()).isEqualTo("after class");
         assertThat(repository.logs()).extracting("actionType").containsExactly("CREATE");
+        assertThat(notificationPublisher.notifications()).hasSize(1);
+        assertThat(notificationPublisher.notifications().getFirst().recipientId()).isEqualTo(10L);
+        assertThat(notificationPublisher.notifications().getFirst().relatedId()).isEqualTo(orderId);
     }
 
     @Test
@@ -130,6 +138,8 @@ class TradeOrderServiceTest {
         assertThat(repository.serviceOrderCount(1L)).isEqualTo(2);
         assertThat(repository.transactions()).extracting("transactionType").containsExactly(3, 6);
         assertThat(repository.logs()).extracting("actionType").containsExactly("CREATE", "PAY");
+        assertThat(notificationPublisher.notifications()).extracting("title")
+                .containsExactly("收到新订单", "订单已支付");
     }
 
     @Test
@@ -171,6 +181,8 @@ class TradeOrderServiceTest {
         assertThat(repository.transactions()).extracting("transactionType").containsExactly(3, 6, 7, 5);
         assertThat(repository.logs()).extracting("actionType")
                 .containsExactly("CREATE", "PAY", "SELLER_SHIP", "BUYER_CONFIRM");
+        assertThat(notificationPublisher.notifications()).extracting("recipientId")
+                .containsExactly(10L, 10L, 20L, 10L);
     }
 
     @Test

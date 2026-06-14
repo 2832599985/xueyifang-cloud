@@ -32,6 +32,10 @@ management:
 
 xueyifang:
   trade:
+    notification:
+      enabled: ${TRADE_NOTIFICATION_ENABLED:true}
+      message-base-url: ${TRADE_MESSAGE_BASE_URL:http://xueyifang-message}
+      create-path: ${TRADE_NOTIFICATION_CREATE_PATH:/internal/notifications}
     tasks:
       enabled: ${TRADE_ORDER_TASKS_ENABLED:true}
       batch-size: ${TRADE_ORDER_TASK_BATCH_SIZE:100}
