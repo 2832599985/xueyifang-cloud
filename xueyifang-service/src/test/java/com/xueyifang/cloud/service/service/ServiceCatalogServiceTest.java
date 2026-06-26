@@ -141,7 +141,7 @@ class ServiceCatalogServiceTest {
         List<ServiceTagResponse> tags = serviceCatalogService.listTags();
 
         assertThat(tags).hasSize(1);
-        assertThat(tags.getFirst().name()).isEqualTo("study");
+        assertThat(tags.getFirst().tagName()).isEqualTo("study");
     }
 
     @Test

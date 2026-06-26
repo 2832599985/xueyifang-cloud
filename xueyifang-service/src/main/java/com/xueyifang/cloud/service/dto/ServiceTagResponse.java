@@ -5,7 +5,7 @@ import com.xueyifang.cloud.service.repository.ServiceTag;
 public record ServiceTagResponse(
         Long id,
         Long tagId,
-        String name,
+        String tagName,
         Integer sortOrder) {
 
     public static ServiceTagResponse from(ServiceTag tag) {
