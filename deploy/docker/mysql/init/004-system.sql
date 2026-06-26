@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `professional` (
+﻿CREATE TABLE IF NOT EXISTS `professional` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `professional_name` VARCHAR(100) NOT NULL COMMENT 'professional name',
     `description` VARCHAR(500) DEFAULT NULL COMMENT 'professional description',
@@ -50,6 +50,10 @@ INSERT INTO `professional` (`professional_name`, `description`) VALUES
     ('工商管理', '商业与管理相关专业'),
     ('英语', '英语语言与文化'),
     ('其他', '其他专业')
+,
+    ('SERVICE_TITLE_MAX_LENGTH', '255', '服务标题最大长度', 1),
+    ('SERVICE_DESC_MAX_LENGTH', '2000', '服务描述最大长度', 1),
+    ('FROZEN_RELEASE_PERCENTAGE', '100', '自动释放时释放给卖家的冻结资金百分比（0-100）', 1)
 ON DUPLICATE KEY UPDATE
     `description` = VALUES(`description`);
 
@@ -59,6 +63,10 @@ INSERT INTO `trade_location` (`location_name`, `location_description`, `location
     ('宿舍楼下', '方便快捷，就近交易', '各宿舍楼下'),
     ('食堂门口', '人流量大，交易便捷', '学生食堂门口'),
     ('运动场旁', '开放空间，视野开阔', '学校运动场南侧')
+,
+    ('SERVICE_TITLE_MAX_LENGTH', '255', '服务标题最大长度', 1),
+    ('SERVICE_DESC_MAX_LENGTH', '2000', '服务描述最大长度', 1),
+    ('FROZEN_RELEASE_PERCENTAGE', '100', '自动释放时释放给卖家的冻结资金百分比（0-100）', 1)
 ON DUPLICATE KEY UPDATE
     `location_description` = VALUES(`location_description`),
     `location_address` = VALUES(`location_address`),
@@ -71,6 +79,10 @@ INSERT INTO `sys_config` (`config_key`, `config_value`, `description`, `is_enabl
     ('ORDER_UNPAID_TIMEOUT_HOURS', '24', 'unpaid order auto cancel timeout in hours', 1),
     ('SELLER_REFUND_TIMEOUT_DAYS', '3', 'seller refund handling timeout in days', 1),
     ('AUTO_CONFIRM_RECEIPT_DAYS', '7', 'auto confirm receipt timeout in days', 1)
+,
+    ('SERVICE_TITLE_MAX_LENGTH', '255', '服务标题最大长度', 1),
+    ('SERVICE_DESC_MAX_LENGTH', '2000', '服务描述最大长度', 1),
+    ('FROZEN_RELEASE_PERCENTAGE', '100', '自动释放时释放给卖家的冻结资金百分比（0-100）', 1)
 ON DUPLICATE KEY UPDATE
     `config_value` = VALUES(`config_value`),
     `description` = VALUES(`description`),

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `service_tag` (
+﻿CREATE TABLE IF NOT EXISTS `service_tag` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `name` VARCHAR(64) NOT NULL COMMENT 'tag name',
     `sort_order` INT NOT NULL DEFAULT 0 COMMENT 'sort order',
@@ -94,3 +94,13 @@ CREATE TABLE IF NOT EXISTS `service_review` (
     KEY `idx_service_review_buyer` (`buyer_id`),
     KEY `idx_service_review_seller` (`seller_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='service review';
+
+
+INSERT INTO service_tag (
+ame, sort_order, status) VALUES
+    ('跑腿代办', 1, 1),
+    ('学业辅导', 2, 1),
+    ('闲置交易', 3, 1)
+ON DUPLICATE KEY UPDATE
+    sort_order = VALUES(sort_order),
+    status = VALUES(status);
