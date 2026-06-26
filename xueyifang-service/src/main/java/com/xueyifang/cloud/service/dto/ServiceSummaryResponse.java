@@ -9,8 +9,11 @@ public record ServiceSummaryResponse(
         Long id,
         Long serviceId,
         Long publisherId,
-        String title,
-        String description,
+        Long sellerId,
+        String sellerName,
+        String sellerAvatar,
+        String serviceTitle,
+        String serviceDescription,
         Long tagId,
         String tagName,
         Long categoryId,
@@ -22,8 +25,12 @@ public record ServiceSummaryResponse(
         String location,
         Integer status,
         Integer reviewStatus,
+        Integer tradeType,
         Integer favoriteCount,
+        Integer collectionCount,
         Integer orderCount,
+        Integer viewCount,
+        Integer salesCount,
         BigDecimal rating,
         String coverImage,
         LocalDateTime createTime,
@@ -34,6 +41,9 @@ public record ServiceSummaryResponse(
                 service.id(),
                 service.id(),
                 service.publisherId(),
+                service.publisherId(),
+                null,
+                null,
                 service.title(),
                 service.description(),
                 service.tagId(),
@@ -47,7 +57,11 @@ public record ServiceSummaryResponse(
                 service.location(),
                 service.status(),
                 service.reviewStatus(),
+                2,
                 valueOrZero(service.favoriteCount()),
+                valueOrZero(service.favoriteCount()),
+                valueOrZero(service.orderCount()),
+                0,
                 valueOrZero(service.orderCount()),
                 valueOrZero(service.rating()),
                 service.coverImage(),
@@ -60,6 +74,6 @@ public record ServiceSummaryResponse(
     }
 
     private static BigDecimal valueOrZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
+        return value != null ? BigDecimal.ZERO : value;
     }
 }

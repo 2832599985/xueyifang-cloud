@@ -11,8 +11,10 @@ public record ServiceDetailResponse(
         Long id,
         Long serviceId,
         Long publisherId,
-        String title,
-        String description,
+        Long sellerId,
+        String serviceTitle,
+        String serviceDescription,
+        String requirements,
         Long tagId,
         String tagName,
         Long categoryId,
@@ -24,12 +26,20 @@ public record ServiceDetailResponse(
         String location,
         Integer status,
         Integer reviewStatus,
+        Integer tradeType,
+        Integer isPhysical,
+        Integer maxPurchases,
+        Integer currentPurchaseCount,
         Integer favoriteCount,
+        Integer collectionCount,
         Integer orderCount,
+        Integer viewCount,
+        Integer reviewCount,
         BigDecimal rating,
         String coverImage,
         List<ServiceImageResponse> images,
         Boolean isCollected,
+        Object tradeLocation,
         LocalDateTime createTime,
         LocalDateTime updateTime) {
 
@@ -45,8 +55,10 @@ public record ServiceDetailResponse(
                 service.id(),
                 service.id(),
                 service.publisherId(),
+                service.publisherId(),
                 service.title(),
                 service.description(),
+                null,
                 service.tagId(),
                 service.tagName(),
                 service.categoryId(),
@@ -58,12 +70,20 @@ public record ServiceDetailResponse(
                 service.location(),
                 service.status(),
                 service.reviewStatus(),
+                2,
+                0,
+                -1,
+                0,
+                valueOrZero(service.favoriteCount()),
                 valueOrZero(service.favoriteCount()),
                 valueOrZero(service.orderCount()),
+                0,
+                0,
                 valueOrZero(service.rating()),
                 service.coverImage(),
                 imageResponses,
                 isCollected,
+                null,
                 service.createTime(),
                 service.updateTime());
     }
@@ -73,6 +93,6 @@ public record ServiceDetailResponse(
     }
 
     private static BigDecimal valueOrZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
+        return value != null ? BigDecimal.ZERO : value;
     }
 }

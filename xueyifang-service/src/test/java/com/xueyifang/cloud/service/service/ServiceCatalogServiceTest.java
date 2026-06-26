@@ -85,7 +85,7 @@ class ServiceCatalogServiceTest {
                 "java", 1L, null, null, null, null, 1, 20);
 
         assertThat(response.total()).isEqualTo(1);
-        assertThat(response.records().getFirst().title()).isEqualTo("Java tutoring");
+        assertThat(response.records().getFirst().serviceTitle()).isEqualTo("Java tutoring");
     }
 
     @Test
@@ -160,7 +160,7 @@ class ServiceCatalogServiceTest {
         ServiceDetailResponse response = serviceCatalogService.getServiceDetail(serviceId);
 
         assertThat(response.publisherId()).isEqualTo(10L);
-        assertThat(response.title()).isEqualTo("Published service");
+        assertThat(response.serviceTitle()).isEqualTo("Published service");
         assertThat(response.status()).isEqualTo(1);
         assertThat(response.coverImage()).isEqualTo("published-cover.jpg");
         assertThat(response.images()).extracting("imageUrl")
@@ -205,7 +205,7 @@ class ServiceCatalogServiceTest {
         serviceCatalogService.updateService(2L, updateRequest());
         ServiceDetailResponse response = serviceCatalogService.getServiceDetail(2L);
 
-        assertThat(response.title()).isEqualTo("Updated service");
+        assertThat(response.serviceTitle()).isEqualTo("Updated service");
         assertThat(response.price()).isEqualByComparingTo("35.00");
         assertThat(response.coverImage()).isEqualTo("updated-cover.jpg");
         assertThat(response.images()).extracting("imageUrl")
