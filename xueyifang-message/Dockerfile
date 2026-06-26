@@ -4,7 +4,7 @@ LABEL maintainer="xueyifang"
 
 WORKDIR /app
 
-COPY target/xueyifang-message-0.1.0-SNAPSHOT.jar app.jar
+COPY xueyifang-message/target/xueyifang-message-0.1.0-SNAPSHOT.jar app.jar
 
 EXPOSE 8700
 

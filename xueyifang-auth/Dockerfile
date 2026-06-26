@@ -4,7 +4,7 @@ LABEL maintainer="xueyifang"
 
 WORKDIR /app
 
-COPY target/xueyifang-auth-0.1.0-SNAPSHOT.jar app.jar
+COPY xueyifang-auth/target/xueyifang-auth-0.1.0-SNAPSHOT.jar app.jar
 
 EXPOSE 8100
 

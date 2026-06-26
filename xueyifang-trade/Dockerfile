@@ -4,7 +4,7 @@ LABEL maintainer="xueyifang"
 
 WORKDIR /app
 
-COPY target/xueyifang-trade-0.1.0-SNAPSHOT.jar app.jar
+COPY xueyifang-trade/target/xueyifang-trade-0.1.0-SNAPSHOT.jar app.jar
 
 EXPOSE 8400
 
