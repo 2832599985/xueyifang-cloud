@@ -30,5 +30,6 @@ public record TradeDispute(
         String buyerAvatar,
         Long sellerId,
         String sellerName,
-        String sellerAvatar) {
+        String sellerAvatar,
+        Integer disputeType) {
 }

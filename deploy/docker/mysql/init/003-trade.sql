@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS `service_dispute` (
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1 pending, 2 refunded, 3 rejected',
     `reason` VARCHAR(500) NOT NULL COMMENT 'dispute reason',
     `evidence` VARCHAR(1000) DEFAULT NULL COMMENT 'evidence',
+    `dispute_type` TINYINT NOT NULL DEFAULT 4 COMMENT 'dispute type: 1 quality, 2 service, 3 timing, 4 other',
     `handle_result` VARCHAR(50) DEFAULT NULL COMMENT 'handle result',
     `handle_remark` VARCHAR(500) DEFAULT NULL COMMENT 'handle remark',
     `handler_id` BIGINT UNSIGNED DEFAULT NULL COMMENT 'handler user id',

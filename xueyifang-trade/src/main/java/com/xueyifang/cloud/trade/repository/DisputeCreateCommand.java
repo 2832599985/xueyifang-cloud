@@ -5,5 +5,6 @@ public record DisputeCreateCommand(
         Long complainantId,
         Long respondentId,
         String reason,
-        String evidence) {
+        String evidence,
+        Integer disputeType) {
 }

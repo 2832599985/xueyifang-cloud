@@ -100,7 +100,8 @@ public class TradeDisputeService {
                 user.userId(),
                 order.sellerId(),
                 reason,
-                normalizeOptional(request.evidence())));
+                normalizeOptional(request.evidence()),
+                request.disputeType()));
         recordLog(order.id(), order.orderStatus(), order.orderStatus(), user.userId(), OPERATOR_ROLE_BUYER,
                 "DISPUTE_CREATE", "买家发起纠纷：" + reason);
         publishDisputeNotification(order.sellerId(), "收到订单纠纷",

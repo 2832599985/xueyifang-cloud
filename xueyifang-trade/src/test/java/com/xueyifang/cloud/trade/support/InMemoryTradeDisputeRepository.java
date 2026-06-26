@@ -48,7 +48,8 @@ public class InMemoryTradeDisputeRepository implements TradeDisputeRepository {
                 null,
                 null,
                 now,
-                now));
+                now,
+                command.disputeType()));
         return disputeId;
     }
 
@@ -118,7 +119,8 @@ public class InMemoryTradeDisputeRepository implements TradeDisputeRepository {
                 command.handlerId(),
                 command.handleTime(),
                 dispute.createTime(),
-                command.handleTime()));
+                command.handleTime(),
+                dispute.disputeType()));
         return true;
     }
 
@@ -151,7 +153,8 @@ public class InMemoryTradeDisputeRepository implements TradeDisputeRepository {
                 order == null ? null : order.buyerAvatar(),
                 order == null ? null : order.sellerId(),
                 order == null ? null : order.sellerName(),
-                order == null ? null : order.sellerAvatar());
+                order == null ? null : order.sellerAvatar(),
+                dispute.disputeType());
     }
 
     private record StoredDispute(
@@ -167,6 +170,7 @@ public class InMemoryTradeDisputeRepository implements TradeDisputeRepository {
             Long handlerId,
             LocalDateTime handleTime,
             LocalDateTime createTime,
-            LocalDateTime updateTime) {
+            LocalDateTime updateTime,
+            Integer disputeType) {
     }
 }

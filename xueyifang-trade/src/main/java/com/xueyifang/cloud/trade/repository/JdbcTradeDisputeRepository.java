@@ -20,7 +20,7 @@ public class JdbcTradeDisputeRepository implements TradeDisputeRepository {
 
     private static final String DISPUTE_SELECT = """
             SELECT d.id, d.order_id, d.complainant_id, d.respondent_id, d.status,
-                   d.reason, d.evidence, d.handle_result, d.handle_remark,
+                   d.reason, d.evidence, d.handle_result, d.handle_remark, d.dispute_type,
                    d.handler_id, d.handle_time, d.create_time, d.update_time,
                    o.order_number, o.service_id, o.total_amount, o.order_status,
                    o.payment_status, o.refund_status,
@@ -49,8 +49,8 @@ public class JdbcTradeDisputeRepository implements TradeDisputeRepository {
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("""
                             INSERT INTO service_dispute
-                                (order_id, complainant_id, respondent_id, status, reason, evidence)
-                            VALUES (?, ?, ?, 1, ?, ?)
+                                (order_id, complainant_id, respondent_id, status, reason, evidence, dispute_type)
+                            VALUES (?, ?, ?, 1, ?, ?, ?)
                             """,
                     Statement.RETURN_GENERATED_KEYS);
             statement.setLong(1, command.orderId());
@@ -58,6 +58,7 @@ public class JdbcTradeDisputeRepository implements TradeDisputeRepository {
             statement.setLong(3, command.respondentId());
             statement.setString(4, command.reason());
             statement.setString(5, command.evidence());
+            statement.setObject(6, command.disputeType() != null ? command.disputeType() : 4);
             return statement;
         }, keyHolder);
 
@@ -203,6 +204,7 @@ public class JdbcTradeDisputeRepository implements TradeDisputeRepository {
                 rs.getString("buyer_avatar"),
                 rs.getObject("seller_id", Long.class),
                 rs.getString("seller_name"),
-                rs.getString("seller_avatar"));
+                rs.getString("seller_avatar"),
+                rs.getObject("dispute_type", Integer.class));
     }
 }
