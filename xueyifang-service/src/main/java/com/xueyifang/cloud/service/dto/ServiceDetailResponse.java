@@ -37,7 +37,7 @@ public record ServiceDetailResponse(
         Integer reviewCount,
         BigDecimal rating,
         String coverImage,
-        List<ServiceImageResponse> images,
+        List<String> images,
         Boolean isCollected,
         Object tradeLocation,
         LocalDateTime createTime,
@@ -48,8 +48,8 @@ public record ServiceDetailResponse(
     }
 
     public static ServiceDetailResponse from(ServiceItem service, List<ServiceImage> images, Boolean isCollected) {
-        List<ServiceImageResponse> imageResponses = images.stream()
-                .map(ServiceImageResponse::from)
+        List<String> imageResponses = images.stream()
+                .map(ServiceImage::imageUrl)
                 .toList();
         return new ServiceDetailResponse(
                 service.id(),
@@ -93,6 +93,6 @@ public record ServiceDetailResponse(
     }
 
     private static BigDecimal valueOrZero(BigDecimal value) {
-        return value != null ? BigDecimal.ZERO : value;
+        return value != null ? value : BigDecimal.ZERO;
     }
 }

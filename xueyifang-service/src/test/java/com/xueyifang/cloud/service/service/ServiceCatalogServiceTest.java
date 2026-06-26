@@ -93,7 +93,7 @@ class ServiceCatalogServiceTest {
         ServiceDetailResponse response = serviceCatalogService.getServiceDetail(1L);
 
         assertThat(response.serviceId()).isEqualTo(1L);
-        assertThat(response.images()).extracting("imageUrl")
+        assertThat(response.images())
                 .containsExactly("cover.jpg", "detail.jpg");
         assertThat(response.isCollected()).isNull();
     }
@@ -163,7 +163,7 @@ class ServiceCatalogServiceTest {
         assertThat(response.serviceTitle()).isEqualTo("Published service");
         assertThat(response.status()).isEqualTo(1);
         assertThat(response.coverImage()).isEqualTo("published-cover.jpg");
-        assertThat(response.images()).extracting("imageUrl")
+        assertThat(response.images())
                 .containsExactly("published-cover.jpg", "published-detail.jpg");
     }
 
@@ -208,7 +208,7 @@ class ServiceCatalogServiceTest {
         assertThat(response.serviceTitle()).isEqualTo("Updated service");
         assertThat(response.price()).isEqualByComparingTo("35.00");
         assertThat(response.coverImage()).isEqualTo("updated-cover.jpg");
-        assertThat(response.images()).extracting("imageUrl")
+        assertThat(response.images())
                 .containsExactly("updated-cover.jpg", "updated-detail.jpg");
     }
 
