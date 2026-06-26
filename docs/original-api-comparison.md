@@ -87,7 +87,7 @@
 | `GET /wallet/transactions` | `WalletController` | `xueyifang-trade` | 已兼容 |
 | `POST /wallet/recharge` | `WalletController` | `xueyifang-trade` | 已兼容 |
 | `POST /wallet/withdraw` | `WalletController` | `xueyifang-trade` | 已兼容 |
-| `POST /dispute/create` | `ServiceDisputeController` | `xueyifang-trade` | 已兼容旧 `description` 字段；`disputeType` 暂不持久化 |
+| `POST /dispute/create` | `ServiceDisputeController` | `xueyifang-trade` | 已兼容旧 `description` 字段；`disputeType` 已持久化 |
 | `GET /dispute/my` | `ServiceDisputeController` | `xueyifang-trade` | 已兼容旧响应字段别名 |
 | `GET /dispute/{disputeId}` | `ServiceDisputeController` | `xueyifang-trade` | 已兼容旧响应字段别名 |
 | `GET /admin/dispute/list` | `AdminDisputeController` | `xueyifang-trade` | 本轮已补齐旧路径和 `disputeStatus` 参数 |
