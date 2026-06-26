@@ -13,6 +13,7 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Repository
@@ -547,11 +548,27 @@ public class JdbcTradeOrderRepository implements TradeOrderRepository {
     private TradeUserWallet mapUser(ResultSet rs) throws SQLException {
         return new TradeUserWallet(
                 rs.getLong("id"),
-                rs.getObject("role", Integer.class),
+                normalizeRoleCode(rs.getString("role")),
                 rs.getString("display_name"),
                 rs.getString("avatar"),
                 rs.getBigDecimal("wallet_balance"),
                 rs.getBigDecimal("frozen_amount"));
+    }
+
+    static Integer normalizeRoleCode(String role) {
+        if (role == null || role.isBlank()) {
+            return 1;
+        }
+        String normalized = role.trim();
+        try {
+            return Integer.valueOf(normalized);
+        } catch (NumberFormatException ignored) {
+            return switch (normalized.toUpperCase(Locale.ROOT)) {
+                case "ADMIN" -> 2;
+                case "STUDENT" -> 1;
+                default -> 1;
+            };
+        }
     }
 
     private TradeOrder mapOrder(ResultSet rs) throws SQLException {

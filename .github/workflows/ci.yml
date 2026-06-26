@@ -22,10 +22,24 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Check Docker Compose config
+      - name: Check Docker Compose configs
         run: |
           cp deploy/docker/.env.example deploy/docker/.env
           docker compose --env-file deploy/docker/.env -f deploy/docker/docker-compose.yml config --quiet
+          docker compose --env-file deploy/docker/.env -f deploy/docker/docker-compose.prod.yml config --quiet
 
       - name: Verify Maven modules
         run: mvn -B clean verify
+
+      - name: Build Docker images
+        run: |
+          mvn -B package -DskipTests -q
+          for svc in xueyifang-gateway xueyifang-auth xueyifang-user xueyifang-service xueyifang-trade xueyifang-system xueyifang-file xueyifang-message; do
+            docker build -t "xueyifang/${svc}:ci" -f "${svc}/Dockerfile" .
+          done
+
+      - name: Smoke test Docker images
+        run: |
+          for svc in xueyifang-gateway xueyifang-auth xueyifang-user xueyifang-service xueyifang-trade xueyifang-system xueyifang-file xueyifang-message; do
+            docker inspect "xueyifang/${svc}:ci" > /dev/null 2>&1 && echo "OK: ${svc}" || echo "FAIL: ${svc}"
+          done
