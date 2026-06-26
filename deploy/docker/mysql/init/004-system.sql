@@ -1,4 +1,6 @@
-﻿CREATE TABLE IF NOT EXISTS `professional` (
+﻿SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `professional` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `professional_name` VARCHAR(100) NOT NULL COMMENT 'professional name',
     `description` VARCHAR(500) DEFAULT NULL COMMENT 'professional description',

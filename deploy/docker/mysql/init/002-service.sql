@@ -1,4 +1,6 @@
-﻿CREATE TABLE IF NOT EXISTS `service_tag` (
+﻿SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `service_tag` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'primary key',
     `name` VARCHAR(64) NOT NULL COMMENT 'tag name',
     `sort_order` INT NOT NULL DEFAULT 0 COMMENT 'sort order',
