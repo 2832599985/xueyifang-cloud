@@ -74,6 +74,6 @@ public record ServiceSummaryResponse(
     }
 
     private static BigDecimal valueOrZero(BigDecimal value) {
-        return value != null ? BigDecimal.ZERO : value;
+        return value != null ? value : BigDecimal.ZERO;
     }
 }
