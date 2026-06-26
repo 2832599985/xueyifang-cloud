@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8700
 
 spring:
@@ -20,9 +20,9 @@ spring:
         file-extension: yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${MYSQL_URL:jdbc:mysql://127.0.0.1:3306/xueyifang?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
-    username: ${MYSQL_USERNAME:xueyifang}
-    password: ${MYSQL_PASSWORD:xueyifang}
+    url: ${XUEYIFANG_MYSQL_URL:jdbc:mysql://127.0.0.1:3306/xueyifang?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${XUEYIFANG_MYSQL_USERNAME:xueyifang}
+    password: ${XUEYIFANG_MYSQL_PASSWORD:xueyifang}
   data:
     redis:
       host: ${XUEYIFANG_REDIS_HOST:127.0.0.1}
